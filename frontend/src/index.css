@@ -520,7 +520,7 @@ img { max-width: 100%; display: block; }
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.06);
+  background: rgba(128, 128, 128, );
   border: none;
   font-size: 18px;
   display: flex;

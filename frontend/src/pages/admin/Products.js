@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 import { showToast } from '../../components/Toast';
+import ImageUploader from '../../components/ImageUploader';
 
 const EMPTY_PRODUCT = { category_id: '', subcategory_id: '', name: '', description: '', price: '', compare_price: '', sku: '', cost_price: '', images: [''], is_active: 1, is_featured: 1, sort_order: 0 };
 const EMPTY_VARIANT = { size: '', colour: '', colour_hex: '#000000', stock_qty: 0, extra_price: 0 };
@@ -189,10 +190,14 @@ export default function Products() {
                     <label className="admin-label">SKU</label>
                     <input className="admin-input" value={form.sku} onChange={e => setForm(f => ({ ...f, sku: e.target.value }))} />
                   </div>
-                  <div className="admin-form-group">
-                    <label className="admin-label">Image URL</label>
-                    <input className="admin-input" value={form.images[0] || ''} onChange={e => setForm(f => ({ ...f, images: [e.target.value] }))} placeholder="https://…" />
-                  </div>
+                <div className="admin-form-group">
+                  <label className="admin-label">Product Images (up to 5) — First image is the main photo</label>
+                  <ImageUploader
+                    images={form.images.filter(Boolean)}
+                    onChange={urls => setForm(f => ({ ...f, images: urls }))}
+                    max={5}
+                  />
+                </div>
                 </div>
 
                 {/* Featured + Sort Order */}

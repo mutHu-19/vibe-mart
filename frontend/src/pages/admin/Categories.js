@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 import { showToast } from '../../components/Toast';
+import ImageUploader from '../../components/ImageUploader';
 
 const CAT_ICONS = {
   'kitchen-items': '🍳', 'bags-purses': '👜', 'toys-games': '🧸',
@@ -211,8 +212,12 @@ export default function Categories() {
                 <input className="admin-input" value={catForm.description} onChange={e => setCatForm(f => ({ ...f, description: e.target.value }))} placeholder="Short description" />
               </div>
               <div className="admin-form-group">
-                <label className="admin-label">Image URL</label>
-                <input className="admin-input" value={catForm.image_url} onChange={e => setCatForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://..." />
+                <label className="admin-label">Category Image</label>
+                <ImageUploader
+                  images={catForm.image_url ? [catForm.image_url] : []}
+                  onChange={urls => setCatForm(f => ({ ...f, image_url: urls[0] || '' }))}
+                  max={1}
+                />
               </div>
               <div className="admin-form-group">
                 <label className="admin-label">Sort Order <span style={{ color: '#888', fontWeight: 400 }}>(lower = first on homepage)</span></label>
@@ -244,8 +249,12 @@ export default function Categories() {
                 <input className="admin-input" value={subForm.name} onChange={e => setSubForm(f => ({ ...f, name: e.target.value }))} required placeholder="e.g. Handbags" />
               </div>
               <div className="admin-form-group">
-                <label className="admin-label">Image URL</label>
-                <input className="admin-input" value={subForm.image_url} onChange={e => setSubForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://..." />
+                <label className="admin-label">Subcategory Image</label>
+                <ImageUploader
+                  images={subForm.image_url ? [subForm.image_url] : []}
+                  onChange={urls => setSubForm(f => ({ ...f, image_url: urls[0] || '' }))}
+                  max={1}
+                />
               </div>
               <div className="admin-form-group">
                 <label className="admin-label">Sort Order</label>

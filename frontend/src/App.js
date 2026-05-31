@@ -89,7 +89,6 @@ function ShopLayout() {
       </main>
       <footer className="shop-footer">
         <p>© 2025 ShopLK — All rights reserved · Made with ❤️ in Sri Lanka</p>
-        <p style={{ marginTop: 4, fontSize: 11 }}>Fast delivery · Secure payment · 100% genuine products</p>
       </footer>
     </div>
   );
