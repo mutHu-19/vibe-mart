@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 import { showToast } from '../../components/Toast';
 
-const EMPTY_PRODUCT = { category_id: '', name: '', description: '', price: '', compare_price: '', sku: '', cost_price: '', images: [''], is_active: 1 };
+const EMPTY_PRODUCT = { category_id: '', subcategory_id: '', name: '', description: '', price: '', compare_price: '', sku: '', cost_price: '', images: [''], is_active: 1, is_featured: 1, sort_order: 0 };
 const EMPTY_VARIANT = { size: '', colour: '', colour_hex: '#000000', stock_qty: 0, extra_price: 0 };
 
 export default function Products() {
@@ -32,7 +32,7 @@ export default function Products() {
   const openNew = () => { setForm(EMPTY_PRODUCT); setVariants([{ ...EMPTY_VARIANT }]); setEditing(null); setShowForm(true); };
   const openEdit = async (p) => {
     const { data } = await api.get(`/products/${p.slug}`);
-    setForm({ ...data, cost_price: data.cost_price || '', images: data.images?.length ? data.images : [''] });
+    setForm({ ...data, cost_price: data.cost_price || '', images: data.images?.length ? data.images : [''], subcategory_id: data.subcategory_id || '', is_featured: data.is_featured ?? 1, sort_order: data.sort_order || 0 });
     setVariants(data.variants?.length ? data.variants : [{ ...EMPTY_VARIANT }]);
     setEditing(p.id);
     setShowForm(true);
@@ -84,7 +84,7 @@ export default function Products() {
         <div style={{ overflowX: 'auto' }}>
           <table className="admin-table">
             <thead>
-              <tr><th>Product</th><th>Category</th><th>Price</th><th>Cost</th><th>Margin</th><th>Stock</th><th>Status</th><th></th></tr>
+              <tr><th>Product</th><th>Category</th><th>Price</th><th>Cost</th><th>Margin</th><th>Stock</th><th>Featured</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
               {filtered.map(p => {
@@ -104,6 +104,11 @@ export default function Products() {
                     <td>
                       <span className={`stock-badge ${(p.total_stock || 0) === 0 ? 'stock-out' : (p.total_stock || 0) < 5 ? 'stock-low' : 'stock-ok'}`}>
                         {p.total_stock || 0}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: p.is_featured ? '#d97706' : '#ccc' }}>
+                        {p.is_featured ? '⭐ Yes' : '—'}
                       </span>
                     </td>
                     <td>
@@ -143,9 +148,18 @@ export default function Products() {
                   </div>
                   <div className="admin-form-group">
                     <label className="admin-label">Category</label>
-                    <select className="admin-input" value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}>
+                    <select className="admin-input" value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value, subcategory_id: '' }))}>
                       <option value="">Select category</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="admin-form-group">
+                    <label className="admin-label">Subcategory</label>
+                    <select className="admin-input" value={form.subcategory_id} onChange={e => setForm(f => ({ ...f, subcategory_id: e.target.value }))}>
+                      <option value="">No subcategory</option>
+                      {categories.find(c => String(c.id) === String(form.category_id))?.subcategories?.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -178,6 +192,27 @@ export default function Products() {
                   <div className="admin-form-group">
                     <label className="admin-label">Image URL</label>
                     <input className="admin-input" value={form.images[0] || ''} onChange={e => setForm(f => ({ ...f, images: [e.target.value] }))} placeholder="https://…" />
+                  </div>
+                </div>
+
+                {/* Featured + Sort Order */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div className="admin-form-group">
+                    <label className="admin-label">Sort Order <span style={{ color: '#888', fontWeight: 400 }}>(lower = first)</span></label>
+                    <input className="admin-input" type="number" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))} />
+                  </div>
+                  <div className="admin-form-group">
+                    <label className="admin-label">Show on Homepage?</label>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      {[{ val: 1, label: '⭐ Featured' }, { val: 0, label: 'Hidden' }].map(opt => (
+                        <button key={opt.val} type="button"
+                          onClick={() => setForm(f => ({ ...f, is_featured: opt.val }))}
+                          style={{ flex: 1, padding: '8px', borderRadius: 4, border: `1.5px solid ${form.is_featured === opt.val ? '#e62e04' : '#e8e8e8'}`, background: form.is_featured === opt.val ? '#fff1ee' : '#fff', color: form.is_featured === opt.val ? '#e62e04' : '#888', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#aaa', marginTop: 4 }}>Featured products appear on the homepage rows</div>
                   </div>
                 </div>
 
