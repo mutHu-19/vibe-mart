@@ -43,11 +43,30 @@ export default function Checkout() {
         delivery_charge: DELIVERY,
       });
       clearCart();
-      navigate('/order-success', { state: { order: data, form, payment, items, total, grandTotal } });
+
+      // Redirect straight to WhatsApp with the order message
+      const waUrl = data.whatsapp_url;
+      if (waUrl) {
+        window.location.href = waUrl;
+      } else {
+        // Fallback: build the message client-side if backend didn't return URL
+        const payLabel = payment === 'bank_deposit' ? 'Bank Deposit' : 'Cash on Delivery';
+        const msg = encodeURIComponent(
+          `━━━━━━━━━━━━━━━━━━━━\n🧾 *NEW ORDER — ${data.invoice_no}*\n━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `👤 *Customer:* ${form.name}\n📞 *Phone:* ${form.phone}\n📍 *Address:* ${form.address}\n\n` +
+          `🛍️ *Items:*\n` +
+          items.map(i => `• ${i.name}${i.colour ? ` | ${i.colour}` : ''}${i.size ? ` | ${i.size}` : ''} × ${i.quantity} = Rs. ${(i.price * i.quantity).toLocaleString()}`).join('\n') +
+          `\n\n🚚 Delivery: Rs. ${DELIVERY.toLocaleString()}\n` +
+          `💰 *TOTAL: Rs. ${grandTotal.toLocaleString()}*\n` +
+          `💳 Payment: ${payLabel}\n\n✅ Thank you for shopping with ShopLK!`
+        );
+        const waNumber = process.env.REACT_APP_WHATSAPP || '94766522855';
+        window.location.href = `https://wa.me/${waNumber}?text=${msg}`;
+      }
     } catch (err) {
       showToast(err.response?.data?.error || 'Order failed', 'error');
+      setPlacing(false);
     }
-    setPlacing(false);
   };
 
   if (items.length === 0) {
