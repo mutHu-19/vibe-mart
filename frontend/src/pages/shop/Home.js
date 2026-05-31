@@ -64,8 +64,10 @@ export default function ShopHome() {
   }, [activeCategory, search]);
 
   useEffect(() => {
-    api.get('/categories').then(r => setCategories(r.data)).catch(() => {});
-  }, []);
+api.get('/categories').then(r => {
+  const list = Array.isArray(r.data) ? r.data : (r.data.categories || []);
+  setCategories(list);
+}).catch(() => {});  }, []);
 
   useEffect(() => {
     setPage(1);
