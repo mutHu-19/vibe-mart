@@ -55,7 +55,10 @@ export default function ShopHome() {
       if (search) params.search = search;
       const { data } = await api.get('/products', { params });
       setProducts(prev => append ? [...prev, ...(data.products || [])] : (data.products || []));
-      setTotalPages(data.pages || 1);
+      const { data } = await api.get('/products', { params });
+const list = Array.isArray(data) ? data : (data.products || data.data || []);
+setProducts(prev => append ? [...prev, ...list] : list);
+setTotalPages(data.pages || 1);
     } catch {}
     setLoading(false);
   }, [activeCategory, search]);
