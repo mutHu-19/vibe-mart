@@ -54,12 +54,12 @@ export default function ShopHome() {
       if (activeCategory) params.category = activeCategory;
       if (search) params.search = search;
       const { data } = await api.get('/products', { params });
-      setProducts(prev => append ? [...prev, ...(data.products || [])] : (data.products || []));
-      const { data } = await api.get('/products', { params });
-const list = Array.isArray(data) ? data : (data.products || data.data || []);
-setProducts(prev => append ? [...prev, ...list] : list);
-setTotalPages(data.pages || 1);
-    } catch {}
+      const list = Array.isArray(data) ? data : (data.products || data.data || []);
+      setProducts(prev => append ? [...prev, ...list] : list);
+      setTotalPages(data.pages || data.totalPages || 1);
+    } catch (err) {
+      console.error('Failed to load products:', err);
+    }
     setLoading(false);
   }, [activeCategory, search]);
 
