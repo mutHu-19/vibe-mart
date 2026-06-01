@@ -224,25 +224,112 @@ export default function Products() {
                 {/* Variants */}
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <label className="admin-label" style={{ margin: 0 }}>Variants (Size / Colour / Stock)</label>
-                    <button type="button" className="btn btn-outline btn-sm" onClick={() => setVariants(v => [...v, { ...EMPTY_VARIANT }])}>+ Add</button>
-                  </div>
-                  <div style={{ background: '#f9f9f9', borderRadius: 6, padding: 10 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 44px 80px 80px 28px', gap: 6, marginBottom: 4 }}>
-                      {['Size', 'Colour', 'Hex', 'Stock', '+Price', ''].map(h => (
-                        <div key={h} style={{ fontSize: 10, fontWeight: 700, color: '#aaa', textTransform: 'uppercase' }}>{h}</div>
-                      ))}
+                    <div>
+                      <label className="admin-label" style={{ margin: 0 }}>Variants</label>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Each colour can have its own image — customers see it when they pick that colour</div>
                     </div>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => setVariants(v => [...v, { ...EMPTY_VARIANT }])}>+ Add Variant</button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {variants.map((v, i) => (
-                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 44px 80px 80px 28px', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-                        <input className="admin-input" placeholder="e.g. XL" value={v.size} onChange={e => { const nv = [...variants]; nv[i].size = e.target.value; setVariants(nv); }} />
-                        <input className="admin-input" placeholder="e.g. Red" value={v.colour} onChange={e => { const nv = [...variants]; nv[i].colour = e.target.value; setVariants(nv); }} />
-                        <input type="color" value={v.colour_hex || '#000000'} onChange={e => { const nv = [...variants]; nv[i].colour_hex = e.target.value; setVariants(nv); }} style={{ width: 44, height: 34, padding: 2, border: '1.5px solid #e8e8e8', borderRadius: 4, cursor: 'pointer' }} />
-                        <input className="admin-input" type="number" min="0" placeholder="Stock" value={v.stock_qty} onChange={e => { const nv = [...variants]; nv[i].stock_qty = parseInt(e.target.value) || 0; setVariants(nv); }} />
-                        <input className="admin-input" type="number" step="0.01" placeholder="+0" value={v.extra_price} onChange={e => { const nv = [...variants]; nv[i].extra_price = parseFloat(e.target.value) || 0; setVariants(nv); }} />
-                        <button type="button" onClick={() => setVariants(v => v.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e62e04', fontSize: 16, fontWeight: 900 }}>×</button>
+                      <div key={i} style={{ background: '#f9f9f9', border: '1.5px solid #e8e8e8', borderRadius: 8, padding: 12, position: 'relative' }}>
+                        {/* Remove button */}
+                        <button type="button" onClick={() => setVariants(vs => vs.filter((_, j) => j !== i))}
+                          style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: '#e62e04', fontSize: 18, fontWeight: 900, lineHeight: 1 }}>×</button>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 44px 90px 90px', gap: 8, marginBottom: 10 }}>
+                          {/* Size */}
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', marginBottom: 3 }}>Size</div>
+                            <input className="admin-input" placeholder="e.g. XL" value={v.size || ''} onChange={e => { const nv = [...variants]; nv[i].size = e.target.value; setVariants(nv); }} />
+                          </div>
+                          {/* Colour name */}
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', marginBottom: 3 }}>Colour Name</div>
+                            <input className="admin-input" placeholder="e.g. Red" value={v.colour || ''} onChange={e => { const nv = [...variants]; nv[i].colour = e.target.value; setVariants(nv); }} />
+                          </div>
+                          {/* Colour hex */}
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', marginBottom: 3 }}>Hex</div>
+                            <input type="color" value={v.colour_hex || '#000000'} onChange={e => { const nv = [...variants]; nv[i].colour_hex = e.target.value; setVariants(nv); }}
+                              style={{ width: 44, height: 34, padding: 2, border: '1.5px solid #e8e8e8', borderRadius: 4, cursor: 'pointer' }} />
+                          </div>
+                          {/* Stock */}
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', marginBottom: 3 }}>Stock</div>
+                            <input className="admin-input" type="number" min="0" placeholder="0" value={v.stock_qty} onChange={e => { const nv = [...variants]; nv[i].stock_qty = parseInt(e.target.value) || 0; setVariants(nv); }} />
+                          </div>
+                          {/* Extra price */}
+                          <div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', marginBottom: 3 }}>+Price</div>
+                            <input className="admin-input" type="number" step="0.01" placeholder="0" value={v.extra_price} onChange={e => { const nv = [...variants]; nv[i].extra_price = parseFloat(e.target.value) || 0; setVariants(nv); }} />
+                          </div>
+                        </div>
+
+                        {/* Variant image upload */}
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', marginBottom: 6 }}>
+                            Colour Image <span style={{ color: '#e62e04', fontWeight: 700 }}>— shown when customer selects this colour</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            {/* Preview */}
+                            {v.image_url ? (
+                              <div style={{ position: 'relative', flexShrink: 0 }}>
+                                <img src={v.image_url} alt={v.colour}
+                                  style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 6, border: `2px solid ${v.colour_hex || '#e8e8e8'}` }} />
+                                <button type="button"
+                                  onClick={() => { const nv = [...variants]; nv[i].image_url = ''; setVariants(nv); }}
+                                  style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, background: '#e62e04', border: 'none', borderRadius: '50%', color: '#fff', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>×</button>
+                              </div>
+                            ) : (
+                              <div style={{ width: 64, height: 64, background: '#eee', borderRadius: 6, border: '2px dashed #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                                📷
+                              </div>
+                            )}
+
+                            <div style={{ flex: 1 }}>
+                              {/* Upload button */}
+                              <label style={{ display: 'inline-block', marginBottom: 6 }}>
+                                <input type="file" accept="image/*" style={{ display: 'none' }}
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    const nv = [...variants];
+                                    nv[i]._uploading = true;
+                                    setVariants([...nv]);
+                                    try {
+                                      const fd = new FormData();
+                                      fd.append('images', file);
+                                      const { data } = await (await import('../../utils/api')).default.post('/upload/images', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                                      nv[i].image_url = data.urls?.[0] || '';
+                                    } catch { alert('Upload failed'); }
+                                    nv[i]._uploading = false;
+                                    setVariants([...nv]);
+                                  }}
+                                />
+                                <span style={{ background: '#1b1b1b', color: '#fff', padding: '6px 12px', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                  {v._uploading ? '⏳ Uploading…' : '📤 Upload Image'}
+                                </span>
+                              </label>
+
+                              {/* OR URL */}
+                              <input className="admin-input" placeholder="Or paste image URL…"
+                                value={v.image_url || ''}
+                                onChange={e => { const nv = [...variants]; nv[i].image_url = e.target.value; setVariants(nv); }}
+                                style={{ fontSize: 12 }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     ))}
+
+                    {variants.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '16px', color: '#ccc', fontSize: 13, background: '#f9f9f9', borderRadius: 8, border: '1.5px dashed #e8e8e8' }}>
+                        No variants yet — click "+ Add Variant" to add sizes, colours and stock
+                      </div>
+                    )}
                   </div>
                 </div>
 

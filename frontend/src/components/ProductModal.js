@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import { useCart } from '../context/CartContext';
 import { showToast } from './Toast';
@@ -10,19 +10,20 @@ export default function ProductModal({ slug, onClose }) {
   const [selectedColour, setSelectedColour] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [qty, setQty] = useState(1);
+  const [imgTransition, setImgTransition] = useState(false);
   const { addItem } = useCart();
+  const imgRef = useRef();
 
   useEffect(() => {
     setLoading(true);
     api.get(`/products/${slug}`).then(r => {
       setProduct(r.data);
       setLoading(false);
-      // Auto-select first available variant colour/size
       const variants = r.data.variants || [];
-      const colours = [...new Set(variants.filter(v => v.colour).map(v => v.colour))];
-      const sizes = [...new Set(variants.filter(v => v.size).map(v => v.size))];
-      if (colours.length) setSelectedColour(colours[0]);
-      if (sizes.length) setSelectedSize(sizes[0]);
+      const firstColour = variants.find(v => v.colour);
+      const firstSize = variants.find(v => v.size);
+      if (firstColour) setSelectedColour(firstColour.colour);
+      if (firstSize) setSelectedSize(firstSize.size);
     }).catch(() => { setLoading(false); onClose(); });
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -37,27 +38,49 @@ export default function ProductModal({ slug, onClose }) {
   );
   if (!product) return null;
 
-  const images = Array.isArray(product.images) ? product.images : [];
+  const productImages = Array.isArray(product.images) ? product.images : [];
   const variants = product.variants || [];
+  // Unique colours (with their variant data)
   const colours = [...new Map(variants.filter(v => v.colour).map(v => [v.colour, v])).values()];
+  // Unique sizes
   const sizes = [...new Set(variants.filter(v => v.size).map(v => v.size))];
 
-  // Find matching variant for stock
-  const matchVariant = () => {
-    if (!variants.length) return null;
-    return variants.find(v => {
-      const colMatch = !selectedColour || v.colour === selectedColour;
-      const sizeMatch = !selectedSize || v.size === selectedSize;
-      return colMatch && sizeMatch && v.is_active !== 0;
-    }) || variants[0];
-  };
+  // Find current variant
+  const currentVariant = variants.find(v => {
+    const colMatch = !selectedColour || v.colour === selectedColour;
+    const sizeMatch = !selectedSize || v.size === selectedSize;
+    return colMatch && sizeMatch;
+  }) || variants[0];
 
-  const currentVariant = matchVariant();
+  // ── Key logic: determine which image to show ──
+  // If selected colour has its own image_url → use it as main image
+  // Otherwise fall back to product images array
+  const colourVariant = colours.find(v => v.colour === selectedColour);
+  const variantImage = colourVariant?.image_url || null;
+
+  // Build the full image list for thumbnails:
+  // variant image first (if exists), then product images
+  const allImages = variantImage
+    ? [variantImage, ...productImages.filter(u => u !== variantImage)]
+    : productImages;
+
+  const displayImage = allImages[activeImg] || allImages[0] || null;
+
   const stockQty = currentVariant?.stock_qty ?? 999;
   const extraPrice = parseFloat(currentVariant?.extra_price || 0);
   const finalPrice = parseFloat(product.price) + extraPrice;
   const discount = product.compare_price && product.compare_price > finalPrice
     ? Math.round((1 - finalPrice / product.compare_price) * 100) : null;
+
+  // When colour changes → animate image swap
+  const handleColourSelect = (colour) => {
+    setImgTransition(true);
+    setTimeout(() => {
+      setSelectedColour(colour);
+      setActiveImg(0); // reset to first (which will be the variant image)
+      setImgTransition(false);
+    }, 150);
+  };
 
   const handleAddCart = () => {
     if (stockQty === 0) { showToast('Out of stock', 'error'); return; }
@@ -65,7 +88,7 @@ export default function ProductModal({ slug, onClose }) {
       product_id: product.id,
       slug: product.slug,
       name: product.name,
-      image: images[0] || null,
+      image: variantImage || productImages[0] || null,
       price: finalPrice,
       variant_id: currentVariant?.id || null,
       colour: selectedColour,
@@ -76,28 +99,42 @@ export default function ProductModal({ slug, onClose }) {
     onClose();
   };
 
-  const handleBuyNow = () => {
-    handleAddCart();
-    // navigate to checkout - handled via cart
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
         <div className="modal-drag-bar" />
         <button className="modal-close" onClick={onClose}>×</button>
 
-        {/* Images */}
-        <div className="modal-imgs">
-          {images.length > 0
-            ? <img className="modal-main-img" src={images[activeImg] || images[0]} alt={product.name} />
-            : <div className="modal-main-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 }}>📦</div>
-          }
+        {/* Main image with fade transition on colour change */}
+        <div className="modal-imgs" style={{ position: 'relative', background: '#f9f9f9' }}>
+          {displayImage ? (
+            <img
+              ref={imgRef}
+              className="modal-main-img"
+              src={displayImage}
+              alt={product.name}
+              style={{ transition: 'opacity 0.15s ease', opacity: imgTransition ? 0 : 1 }}
+            />
+          ) : (
+            <div className="modal-main-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 }}>📦</div>
+          )}
+          {/* Colour label overlay */}
+          {selectedColour && variantImage && (
+            <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.55)', color: '#fff', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, backdropFilter: 'blur(4px)' }}>
+              {selectedColour}
+            </div>
+          )}
         </div>
-        {images.length > 1 && (
+
+        {/* Thumbnail strip — shows all images including variant images */}
+        {allImages.length > 1 && (
           <div className="modal-thumb-strip">
-            {images.map((img, i) => (
-              <img key={i} className={`modal-thumb ${i === activeImg ? 'active' : ''}`} src={img} alt="" onClick={() => setActiveImg(i)} />
+            {allImages.map((img, i) => (
+              <img key={i} className={`modal-thumb ${i === activeImg ? 'active' : ''}`}
+                src={img} alt=""
+                onClick={() => setActiveImg(i)}
+                style={{ border: i === activeImg ? '2px solid #e62e04' : '2px solid transparent' }}
+              />
             ))}
           </div>
         )}
@@ -114,20 +151,53 @@ export default function ProductModal({ slug, onClose }) {
             {discount && <span className="modal-discount">-{discount}%</span>}
           </div>
 
-          {/* Colours */}
+          {/* Colours — with image preview on each swatch */}
           {colours.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div className="modal-section-title">Colour: <strong>{selectedColour || 'Select'}</strong></div>
-              <div className="colour-swatches">
-                {colours.map(v => (
-                  <div
-                    key={v.colour}
-                    className={`colour-swatch ${selectedColour === v.colour ? 'selected' : ''}`}
-                    style={{ background: v.colour_hex || '#ccc' }}
-                    onClick={() => setSelectedColour(v.colour)}
-                    title={v.colour}
-                  />
-                ))}
+            <div style={{ marginBottom: 14 }}>
+              <div className="modal-section-title">
+                Colour: <strong style={{ color: '#1b1b1b' }}>{selectedColour || 'Select'}</strong>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                {colours.map(v => {
+                  const isSelected = selectedColour === v.colour;
+                  return (
+                    <div key={v.colour} onClick={() => handleColourSelect(v.colour)}
+                      title={v.colour}
+                      style={{
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}>
+                      {/* If variant has image — show mini image preview, else show colour circle */}
+                      {v.image_url ? (
+                        <div style={{
+                          width: 52, height: 52, borderRadius: 6, overflow: 'hidden',
+                          border: `2.5px solid ${isSelected ? '#e62e04' : '#e8e8e8'}`,
+                          transition: 'all 0.15s',
+                          transform: isSelected ? 'scale(1.08)' : 'scale(1)',
+                          boxShadow: isSelected ? '0 2px 8px rgba(230,46,4,0.3)' : 'none',
+                        }}>
+                          <img src={v.image_url} alt={v.colour} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      ) : (
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%',
+                          background: v.colour_hex || '#ccc',
+                          border: `2.5px solid ${isSelected ? '#e62e04' : 'transparent'}`,
+                          outline: `2px solid ${isSelected ? '#e62e04' : '#e8e8e8'}`,
+                          transition: 'all 0.15s',
+                          transform: isSelected ? 'scale(1.15)' : 'scale(1)',
+                          boxShadow: isSelected ? '0 2px 8px rgba(230,46,4,0.3)' : '0 1px 3px rgba(0,0,0,0.15)',
+                        }} />
+                      )}
+                      <span style={{ fontSize: 10, fontWeight: 700, color: isSelected ? '#e62e04' : '#888', maxWidth: 56, textAlign: 'center', lineHeight: 1.2 }}>
+                        {v.colour}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -163,7 +233,7 @@ export default function ProductModal({ slug, onClose }) {
           <button className="add-cart-btn" onClick={handleAddCart} disabled={stockQty === 0}>
             🛒 Add to Cart
           </button>
-          <button className="buy-now-btn" onClick={handleBuyNow} disabled={stockQty === 0}>
+          <button className="buy-now-btn" onClick={handleAddCart} disabled={stockQty === 0}>
             ⚡ Buy Now
           </button>
 
@@ -176,8 +246,8 @@ export default function ProductModal({ slug, onClose }) {
           )}
 
           {/* Trust badges */}
-          <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-            {[ '🔄 Easy Returns', '⭐ Verified Products'].map(b => (
+          <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+            {['🚚 Free Delivery', '🔄 Easy Returns', '🔒 Secure Payment', '⭐ Verified Products'].map(b => (
               <span key={b} style={{ fontSize: 11, color: '#555', background: '#f5f5f5', padding: '4px 10px', borderRadius: 2, fontWeight: 600 }}>{b}</span>
             ))}
           </div>
