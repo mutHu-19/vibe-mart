@@ -40,7 +40,18 @@ function ShopNavbar() {
 
   return (
     <>
-      
+      {/* Top bar */}
+      <div className="topbar">
+        <div style={{ display: 'flex', gap: 16 }}>
+          <span>🇱🇰 Deliver to Sri Lanka</span>
+          <Link to="/admin" style={{ opacity: 0.7 }}>Seller Center</Link>
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <span>Help & Support</span>
+          <a href="#!">Download App</a>
+        </div>
+      </div>
+
       {/* Main navbar */}
       <nav className="navbar">
         <div className="navbar-inner">
@@ -89,6 +100,7 @@ function ShopLayout() {
       </main>
       <footer className="shop-footer">
         <p>© 2025 ShopLK — All rights reserved · Made with ❤️ in Sri Lanka</p>
+        <p style={{ marginTop: 4, fontSize: 11 }}>Fast delivery · Secure payment · 100% genuine products</p>
       </footer>
     </div>
   );

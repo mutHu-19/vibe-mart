@@ -6,8 +6,8 @@
 
 :root {
   /* AliExpress palette */
-  --ali-red: #e62e04;
-  --ali-orange: #ff6000;
+  --ali-red: #010034;
+  --ali-orange: #7c0000;
   --ali-yellow: #f5a623;
   --ali-dark: #1b1b1b;
   --ali-gray: #f5f5f5;
@@ -98,7 +98,7 @@ img { max-width: 100%; display: block; }
   background: white;
   border-radius: 2px;
   overflow: hidden;
-  border: 2px solid #ffdd00;
+  border: 2px solid #000132;
 }
 .navbar-search input {
   flex: 1;
@@ -110,7 +110,7 @@ img { max-width: 100%; display: block; }
 }
 .navbar-search input::placeholder { color: #bbb; }
 .navbar-search button {
-  background: #ffdd00;
+  background: #00fbff;
   border: none;
   padding: 0 18px;
   font-size: 16px;
@@ -142,7 +142,7 @@ img { max-width: 100%; display: block; }
 }
 .navbar-icon-btn:hover { background: rgba(255,255,255,0.25); }
 .cart-count-badge {
-  background: #ffdd00;
+  background: #ffffff;
   color: var(--ali-dark);
   border-radius: 50%;
   width: 18px;
@@ -210,7 +210,7 @@ img { max-width: 100%; display: block; }
 
 /* ============ HERO BANNER ============ */
 .hero-banner {
-  background: linear-gradient(135deg, #e62e04 0%, #ff6000 50%, #ff8c00 100%);
+  background: linear-gradient(135deg, #010034 0%, #0e0074 50%, #0700c7 100%);
   border-radius: var(--ali-radius);
   padding: 28px 24px;
   color: white;

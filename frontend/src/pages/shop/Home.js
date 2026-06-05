@@ -260,7 +260,12 @@ export default function ShopHome() {
         </div>
       </div>
 
-      
+      {/* Flash deal strip */}
+      <div className="flash-strip" style={{ marginBottom: 12 }}>
+        <div className="flash-label">⚡ DEALS</div>
+        <FlashTimer />
+        <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>Ends tonight</span>
+      </div>
 
       {/* Category Pills */}
       <div style={{ marginBottom: 14 }}>

@@ -65,6 +65,12 @@ export default function Products() {
     fetchAll();
   };
 
+  const handleActivate = async (p) => {
+    await api.put(`/products/${p.id}`, { ...p, is_active: 1, images: p.images || [] });
+    showToast('Product activated ✅', 'success');
+    fetchAll();
+  };
+
   if (loading) return <div className="loading-wrap"><div className="spinner" /></div>;
 
   return (
@@ -120,7 +126,10 @@ export default function Products() {
                     <td>
                       <div style={{ display: 'flex', gap: 5 }}>
                         <button className="btn btn-outline btn-sm" onClick={() => openEdit(p)}>Edit</button>
-                        {p.is_active ? <button className="btn btn-danger btn-sm" onClick={() => handleDeactivate(p.id)}>Off</button> : null}
+                        {p.is_active
+                          ? <button className="btn btn-danger btn-sm" onClick={() => handleDeactivate(p.id)}>Deactivate</button>
+                          : <button className="btn btn-success btn-sm" onClick={() => handleActivate(p)}>Activate</button>
+                        }
                       </div>
                     </td>
                   </tr>
@@ -148,21 +157,44 @@ export default function Products() {
                     <input className="admin-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
                   </div>
                   <div className="admin-form-group">
-                    <label className="admin-label">Category</label>
+                    <label className="admin-label">Primary Category <span style={{ color: '#888', fontWeight: 400 }}>(for filtering)</span></label>
                     <select className="admin-input" value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value, subcategory_id: '' }))}>
                       <option value="">Select category</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
-                  <div className="admin-form-group">
-                    <label className="admin-label">Subcategory</label>
-                    <select className="admin-input" value={form.subcategory_id} onChange={e => setForm(f => ({ ...f, subcategory_id: e.target.value }))}>
-                      <option value="">No subcategory</option>
-                      {categories.find(c => String(c.id) === String(form.category_id))?.subcategories?.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                </div>
+
+                {/* Multiple categories selector */}
+                <div className="admin-form-group">
+                  <label className="admin-label">Also appears in <span style={{ color: '#888', fontWeight: 400 }}>(tick all that apply)</span></label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, background: '#f9f9f9', borderRadius: 6, padding: 10, border: '1.5px solid #e8e8e8' }}>
+                    {categories.map(c => (
+                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fff', border: `1.5px solid ${(form.extra_categories||[]).includes(String(c.id)) || String(form.category_id)===String(c.id) ? '#e62e04' : '#e8e8e8'}`, borderRadius: 20, padding: '4px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: (form.extra_categories||[]).includes(String(c.id)) || String(form.category_id)===String(c.id) ? '#e62e04' : '#555' }}>
+                        <input type="checkbox"
+                          checked={(form.extra_categories||[]).includes(String(c.id)) || String(form.category_id)===String(c.id)}
+                          disabled={String(form.category_id)===String(c.id)}
+                          onChange={e => {
+                            const id = String(c.id);
+                            const current = form.extra_categories || [];
+                            setForm(f => ({ ...f, extra_categories: e.target.checked ? [...current.filter(x=>x!==id), id] : current.filter(x=>x!==id) }));
+                          }}
+                          style={{ display: 'none' }}
+                        />
+                        {c.name}
+                      </label>
+                    ))}
                   </div>
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-label">Subcategory</label>
+                  <select className="admin-input" value={form.subcategory_id} onChange={e => setForm(f => ({ ...f, subcategory_id: e.target.value }))}>
+                    <option value="">No subcategory</option>
+                    {categories.find(c => String(c.id) === String(form.category_id))?.subcategories?.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="admin-form-group">

@@ -53,7 +53,7 @@ export default function Checkout() {
         const payLabel = payment === 'bank_deposit' ? 'Bank Deposit' : 'Cash on Delivery';
         const msg = encodeURIComponent(
           `━━━━━━━━━━━━━━━━━━━━\n🧾 *NEW ORDER — ${data.invoice_no}*\n━━━━━━━━━━━━━━━━━━━━\n\n` +
-          `👤 *Customer:* ${form.name}\n📍 *Address:* ${form.address}📞 *Phone:* ${form.phone}\n\n\n` +
+          `👤 *Customer:* ${form.name}\n📞 *Phone:* ${form.phone}\n📍 *Address:* ${form.address}\n\n` +
           `🛍️ *Items:*\n` +
           items.map(i => `• ${i.name}${i.colour ? ` | ${i.colour}` : ''}${i.size ? ` | ${i.size}` : ''} × ${i.quantity} = Rs. ${(i.price * i.quantity).toLocaleString()}`).join('\n') +
           `\n\n🚚 Delivery: Rs. ${DELIVERY.toLocaleString()}\n` +
@@ -114,7 +114,7 @@ export default function Checkout() {
             <div className="checkout-card">
               <h3>🚚 Delivery Info</h3>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                {['🕐 2-5 Days Delivery', '🔒 Safe Packaging'].map(b => (
+                {['🕐 2-5 Days Delivery', '📦 Tracked Shipping', '🔒 Safe Packaging'].map(b => (
                   <span key={b} style={{ background: '#f5f5f5', padding: '6px 12px', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>{b}</span>
                 ))}
               </div>

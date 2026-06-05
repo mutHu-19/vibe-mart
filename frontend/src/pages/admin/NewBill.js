@@ -171,7 +171,7 @@ export default function NewBill() {
         <p style={{color:'#888',fontSize:12,marginTop:2}}>Stock deducts immediately on bill creation</p>
       </div>
 
-      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 350px',gap:12}}>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 350px',gap:12}} className="newbill-layout">
 
         {/* LEFT — Products */}
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
