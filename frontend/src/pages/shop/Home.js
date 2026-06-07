@@ -93,8 +93,8 @@ function CategoryPage({ category, onBack, onProductClick }) {
   return (
     <div>
       {/* Category Header */}
-      <div style={{ backgroundColor:'#fff' ,borderColor:'#000000' ,borderRadius: 8, padding: '16px 20px', marginBottom: 12, color: '#000000', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', width: 34, height: 34, borderRadius: '50%', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>←</button>
+      <div style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`, borderRadius: 8, padding: '16px 20px', marginBottom: 12, color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={onBack} style={{ background: '#fff', borderColor:'#000000', color: '#000000', width: 34, height: 54, borderRadius: '50%', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>←</button>
         <div>
           <div style={{ fontSize: 20, fontWeight: 900, fontFamily: 'Rubik, sans-serif' }}>
             {CAT_ICONS[category.slug] || '📦'} {category.name}
