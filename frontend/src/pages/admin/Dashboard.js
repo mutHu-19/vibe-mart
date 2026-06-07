@@ -60,12 +60,7 @@ export default function Dashboard() {
           </div>
           <div style={{ fontSize: 11, opacity: 0.5 }}>All figures are for the current month only</div>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 10, opacity: 0.4, marginBottom: 2 }}>Gross Revenue</div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: '#e62e04', fontFamily: 'Rubik,sans-serif' }}>
-            Rs. {gross.toLocaleString()}
-          </div>
-        </div>
+      
       </div>
 
       {/* P&L Row — Gross Profit / Net Profit / Expenses */}
@@ -101,7 +96,6 @@ export default function Dashboard() {
         <StatCard icon="🧾" label="Bills Created" value={billCount} sub={`${monthName}`} color="#1b1b1b" />
         <StatCard icon="📦" label="Web Orders" value={summary?.orders || 0} sub={`${pending} pending`} color="#0a68f4" />
         <StatCard icon="💸" label="Discounts Given" value={`Rs. ${(summary?.total_discount||0).toLocaleString()}`} sub="This month" color="#d97706" />
-        <StatCard icon="🚚" label="Delivery Income" value={`Rs. ${(summary?.total_delivery||0).toLocaleString()}`} sub="This month" color="#16a34a" />
         <StatCard icon="📊" label="Profit Margin" value={gross > 0 ? `${((grossProfit/gross)*100).toFixed(1)}%` : '0%'} sub="Gross margin" color="#7c3aed" />
       </div>
 

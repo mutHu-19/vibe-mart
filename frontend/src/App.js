@@ -41,32 +41,15 @@ function ShopNavbar() {
   return (
     <>
       {/* Top bar */}
-      <div className="topbar">
-        <div style={{ display: 'flex', gap: 16 }}>
-          <span>🇱🇰 Deliver to Sri Lanka</span>
-          <Link to="/admin" style={{ opacity: 0.7 }}>Seller Center</Link>
-        </div>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <span>Help & Support</span>
-          <a href="#!">Download App</a>
-        </div>
-      </div>
+      
 
       {/* Main navbar */}
       <nav className="navbar">
         <div className="navbar-inner">
-          <Link to="/" className="navbar-brand">Shop<span>LK</span></Link>
+          <Link to="/" className="navbar-brand">Vibe<span>Mart</span></Link>
 
           <div className="navbar-search">
-            <form onSubmit={handleSearch} style={{ display: 'flex', width: '100%' }}>
-              <input
-                type="text"
-                placeholder="Search products, brands and categories…"
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-              />
-              <button type="submit">🔍</button>
-            </form>
+            
           </div>
 
           <div className="navbar-actions">
@@ -99,8 +82,7 @@ function ShopLayout() {
         </div>
       </main>
       <footer className="shop-footer">
-        <p>© 2025 ShopLK — All rights reserved · Made with ❤️ in Sri Lanka</p>
-        <p style={{ marginTop: 4, fontSize: 11 }}>Fast delivery · Secure payment · 100% genuine products</p>
+        <p>© 2026 Vibe Mart — All rights reserved · Made with ❤️ in Sri Lanka</p>
       </footer>
     </div>
   );

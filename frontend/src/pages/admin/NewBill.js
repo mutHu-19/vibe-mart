@@ -5,8 +5,6 @@ import { showToast } from '../../components/Toast';
 const PAYMENT_OPTS = [
   { val: 'cash',         icon: '💵', label: 'Cash' },
   { val: 'bank_deposit', icon: '🏦', label: 'Bank' },
-  { val: 'card',         icon: '💳', label: 'Card' },
-  { val: 'other',        icon: '📱', label: 'Other' },
 ];
 
 export default function NewBill() {
