@@ -51,7 +51,6 @@ function ProductCard({ p, onClick }) {
           <span className="price-main">Rs. {parseFloat(p.price).toLocaleString()}</span>
           {p.compare_price && <span className="price-orig">Rs. {parseFloat(p.compare_price).toLocaleString()}</span>}
         </div>
-        <div className="product-sold">🇱🇰 Free shipping</div>
       </div>
       <button className="product-card-btn" onClick={e => { e.stopPropagation(); onClick(p.slug); }}>
         Add to Cart +
@@ -94,7 +93,7 @@ function CategoryPage({ category, onBack, onProductClick }) {
   return (
     <div>
       {/* Category Header */}
-      <div style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`, borderRadius: 8, padding: '16px 20px', marginBottom: 12, color: '#fff', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ backgroundColor:'#fff' ,borderColor:'#000000' ,borderRadius: 8, padding: '16px 20px', marginBottom: 12, color: '#000000', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', width: 34, height: 34, borderRadius: '50%', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>←</button>
         <div>
           <div style={{ fontSize: 20, fontWeight: 900, fontFamily: 'Rubik, sans-serif' }}>
@@ -249,7 +248,7 @@ export default function ShopHome() {
       <div className="hero-banner" style={{ marginBottom: 12 }}>
         <div className="hero-text">
           <h1>Everything You Need,<br />Delivered Fast 🚀</h1>
-          <p>Kitchen · Bags · Toys · Home Decor · Electronics</p>
+          <p></p>
           <button className="hero-cta" onClick={() => window.scrollTo({ top: 500, behavior: 'smooth' })}>
             Shop Now →
           </button>

@@ -247,7 +247,7 @@ export default function ProductModal({ slug, onClose }) {
 
           {/* Trust badges */}
           <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
-            {['🚚 Free Delivery', '🔄 Easy Returns', '🔒 Secure Payment', '⭐ Verified Products'].map(b => (
+            {[ '🔒 Secure Payment', '⭐ Verified Products'].map(b => (
               <span key={b} style={{ fontSize: 11, color: '#555', background: '#f5f5f5', padding: '4px 10px', borderRadius: 2, fontWeight: 600 }}>{b}</span>
             ))}
           </div>

@@ -37,7 +37,6 @@ export default function Expenses() {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'1rem', marginBottom:'1.25rem' }}>
         {[
           { label:'This Month', value:`Rs. ${thisMonth.toLocaleString()}`, icon:'📅', color:'#e94560' },
-          { label:'Total Expenses', value:`Rs. ${total.toLocaleString()}`, icon:'💸', color:'#1a1a2e' },
           { label:'No. of Records', value:expenses.length, icon:'📋', color:'#8e44ad' },
         ].map(s=>(
           <div key={s.label} style={{ background:'#fff', borderRadius:14, padding:'1.25rem', border:'1px solid #eee', boxShadow:'0 2px 12px rgba(0,0,0,0.05)' }}>

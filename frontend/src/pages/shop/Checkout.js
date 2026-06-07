@@ -111,14 +111,7 @@ export default function Checkout() {
             </div>
 
             {/* Delivery info */}
-            <div className="checkout-card">
-              <h3>🚚 Delivery Info</h3>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                {['🕐 2-5 Days Delivery', '📦 Tracked Shipping', '🔒 Safe Packaging'].map(b => (
-                  <span key={b} style={{ background: '#f5f5f5', padding: '6px 12px', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>{b}</span>
-                ))}
-              </div>
-            </div>
+           
           </div>
 
           {/* Order Summary */}
