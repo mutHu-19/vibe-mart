@@ -1,24 +1,21 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 
-export default function AdminLogin() {
-  const [email, setEmail] = useState('admin@shoplk.com');
+export default function Login() {
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
-      login(data);
-      navigate('/admin');
+      login(data.admin, data.token);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     }
@@ -26,29 +23,28 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-logo">
+    <div className="admin-login-page">
+      <div className="admin-login-card">
+        <div className="admin-login-logo">
           <h1>Shop<span>LK</span></h1>
-          <p>Admin Dashboard</p>
+          <p>Admin Panel — Sign In</p>
         </div>
-        {error && <div className="error-msg">⚠️ {error}</div>}
+        {error && <div className="error-msg">{error}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.4rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</label>
-            <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <div className="admin-form-group">
+            <label className="admin-label">Email</label>
+            <input className="admin-input" type="email" value={email}
+              onChange={e => setEmail(e.target.value)} placeholder="admin@shoplk.com" required />
           </div>
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.4rem', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password</label>
-            <input className="form-input" type="password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} required />
+          <div className="admin-form-group">
+            <label className="admin-label">Password</label>
+            <input className="admin-input" type="password" value={password}
+              onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
           </div>
           <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Signing in…' : 'Sign In →'}
           </button>
         </form>
-        <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.8rem', color: 'var(--muted)' }}>
-          Default: admin@shoplk.com / admin123
-        </p>
       </div>
     </div>
   );
