@@ -157,8 +157,25 @@ export default function ShopHome() {
   const [selectedSlug, setSelectedSlug] = useState(null);
   const [activeCategoryPage, setActiveCategoryPage] = useState(null); // browsing a category
   const [searchInput, setSearchInput] = useState('');
-  const [searchResults, setSearchResults] = useState(null); // null = not searching
+  const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
+
+  // All products section
+  const [allProducts, setAllProducts] = useState([]);
+  const [allPage, setAllPage] = useState(1);
+  const [allTotalPages, setAllTotalPages] = useState(1);
+  const [allLoading, setAllLoading] = useState(false);
+
+  const loadMoreAll = async (pg = 1, append = false) => {
+    setAllLoading(true);
+    try {
+      const { data } = await api.get('/products', { params: { page: pg, limit: 20 } });
+      const list = data.products || [];
+      setAllProducts(prev => append ? [...prev, ...list] : list);
+      setAllTotalPages(data.pages || 1);
+    } catch {}
+    setAllLoading(false);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -168,6 +185,8 @@ export default function ShopHome() {
       setFeaturedRows(Array.isArray(featRes.data) ? featRes.data : []);
       setCategories(Array.isArray(catRes.data) ? catRes.data : []);
       setLoading(false);
+            loadMoreAll(1, false); // ← add this line
+
     }).catch(() => setLoading(false));
   }, []);
 
@@ -326,6 +345,37 @@ export default function ShopHome() {
           );
         })
       )}
+
+      {/* ── ALL PRODUCTS ── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 4, height: 18, background: '#0288d1', borderRadius: 2 }} />
+            <span style={{ fontFamily: 'Rubik, sans-serif', fontWeight: 800, fontSize: 16, color: '#1b1b1b' }}>
+              🛍️ All Products
+            </span>
+          </div>
+          <span style={{ fontSize: 12, color: '#888' }}>{allProducts.length} items</span>
+        </div>
+
+        {allLoading ? (
+          <div className="loading-wrap"><div className="spinner" /></div>
+        ) : (
+          <>
+            <div className="product-grid">
+              {allProducts.map(p => <ProductCard key={p.id} p={p} onClick={setSelectedSlug} />)}
+            </div>
+            {allPage < allTotalPages && (
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <button onClick={loadMoreAll} disabled={allLoading}
+                  style={{ background: '#fff', color: '#0288d1', border: '1.5px solid #0288d1', padding: '10px 32px', borderRadius: 4, fontWeight: 800, cursor: 'pointer', fontSize: 13 }}>
+                  Load More
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {selectedSlug && <ProductModal slug={selectedSlug} onClose={() => setSelectedSlug(null)} />}
     </>
