@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { showToast } from '../../components/Toast';
 
 const KEY = 'shoplk_bill_settings';
-const DEFAULTS = { shop_name:'My Shop', phone:'', address:'', email:'', bank_name:'', account_no:'', account_name:'', branch:'', delivery_charge:350, footer_note:'Thank you for your purchase!', whatsapp_number:'' };
+const DEFAULTS = { shop_name:'My Shop', phone:'', address:'', email:'', bank_name:'', account_no:'', account_name:'', branch:'', delivery_charge:350, footer_note:'Thank you for your purchase!', whatsapp_number:'' ,facebook_url:'www.facebook.com'};
 
 export default function BillSettings() {
   const [settings, setSettings] = useState(() => { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY)||'{}') }; } catch { return DEFAULTS; } });

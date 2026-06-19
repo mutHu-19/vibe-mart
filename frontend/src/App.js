@@ -28,6 +28,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import ChangePassword from './pages/admin/ChangePassword';
 import ShopPopup from './components/ShopPopup';
 import PopupSettings from './pages/admin/PopupSettings';
+import FloatingButtons from './components/FloatingButtons';
 
 function ShopNavbar() {
   const { count, setCartOpen } = useCart();
@@ -70,6 +71,7 @@ function ShopLayout() {
       <ShopNavbar />
       <CartDrawer />
       <ShopPopup />
+      <FloatingButtons /> 
       <main style={{ flex: 1 }}>
         <div className="page-wrap">
           <Routes>
