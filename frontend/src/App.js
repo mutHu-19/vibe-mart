@@ -26,6 +26,8 @@ import Expenses from './pages/admin/Expenses';
 import BillSettings from './pages/admin/BillSettings';
 import AdminUsers from './pages/admin/AdminUsers';
 import ChangePassword from './pages/admin/ChangePassword';
+import ShopPopup from './components/ShopPopup';
+import PopupSettings from './pages/admin/PopupSettings';
 
 function ShopNavbar() {
   const { count, setCartOpen } = useCart();
@@ -67,6 +69,7 @@ function ShopLayout() {
     <div className="shop-layout">
       <ShopNavbar />
       <CartDrawer />
+      <ShopPopup />
       <main style={{ flex: 1 }}>
         <div className="page-wrap">
           <Routes>
@@ -108,6 +111,7 @@ function AdminPageRenderer({ page }) {
     'expenses':        <Expenses />,
     'bill-settings':   <BillSettings />,
     'change-password': <ChangePassword />,
+    'popup-settings': <PopupSettings />,
   };
 
   // If it's a super-admin-only page and user is not super admin
