@@ -6,7 +6,7 @@ import RichTextEditor from '../../components/RichTextEditor';
 
 const EMPTY_VARIANT = { size: '', colour: '', colour_hex: '#000000', stock_qty: 0, extra_price: 0, image_url: '' };
 const EMPTY_PRODUCT = {
-  category_id: '', subcategory_id: '', category_ids: [],
+  category_id: '', subcategory_id: '', category_ids: [], subcategory_ids: [],
   name: '', description: '', price: '', compare_price: '',
   sku: '', cost_price: '', images: [''], is_active: 1, is_featured: 1, sort_order: 0
 };
@@ -49,6 +49,7 @@ export default function Products() {
       is_featured: data.is_featured ?? 1,
       sort_order: data.sort_order || 0,
       category_ids: (data.category_ids || []).map(String),
+      subcategory_ids: (data.subcategory_ids || []).map(String),
     });
     setVariants(data.variants?.length ? data.variants : [{ ...EMPTY_VARIANT }]);
     setEditing(p.id);
@@ -82,7 +83,7 @@ export default function Products() {
   };
 
   const handleActivate = async (p) => {
-    await api.put(`/products/${p.id}`, { ...p, is_active: 1, images: p.images || [], category_ids: p.category_ids || [] });
+    await api.put(`/products/${p.id}`, { ...p, is_active: 1, images: p.images || [], category_ids: p.category_ids || [], subcategory_ids: p.subcategory_ids || [] });
     showToast('Product activated ✅', 'success');
     fetchAll();
   };
@@ -124,7 +125,7 @@ export default function Products() {
         <div style={{ overflowX: 'auto' }}>
           <table className="admin-table">
             <thead>
-              <tr><th>Product</th><th>Categories</th><th>Price</th><th>Cost</th><th>Margin</th><th>Stock</th><th>Featured</th><th>Status</th><th></th></tr>
+              <tr><th>Product</th><th>Categories</th><th>Subcategories</th><th>Price</th><th>Cost</th><th>Margin</th><th>Stock</th><th>Featured</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
               {filtered.map(p => {
@@ -133,6 +134,9 @@ export default function Products() {
                   : '—';
                 const catNames = (p.category_ids || [])
                   .map(id => categories.find(c => String(c.id) === String(id))?.name)
+                  .filter(Boolean);
+                const subNames = (p.subcategory_ids || [])
+                  .map(id => categories.flatMap(c => c.subcategories || []).find(s => String(s.id) === String(id))?.name)
                   .filter(Boolean);
                 return (
                   <tr key={p.id}>
@@ -145,6 +149,15 @@ export default function Products() {
                         <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', maxWidth: 160 }}>
                           {catNames.map(n => (
                             <span key={n} style={{ background: '#e0f0ff', color: '#0277bd', padding: '1px 7px', borderRadius: 10, fontWeight: 700 }}>{n}</span>
+                          ))}
+                        </div>
+                      ) : <span style={{ color: '#ccc' }}>—</span>}
+                    </td>
+                    <td style={{ fontSize: 11 }}>
+                      {subNames.length > 0 ? (
+                        <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', maxWidth: 160 }}>
+                          {subNames.map(n => (
+                            <span key={n} style={{ background: '#f3e8ff', color: '#7c3aed', padding: '1px 7px', borderRadius: 10, fontWeight: 700 }}>{n}</span>
                           ))}
                         </div>
                       ) : <span style={{ color: '#ccc' }}>—</span>}
@@ -180,7 +193,7 @@ export default function Products() {
                   </tr>
                 );
               })}
-              {filtered.length === 0 && <tr><td colSpan={9} style={{ textAlign: 'center', color: '#ccc', padding: '2rem' }}>No products found</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={10} style={{ textAlign: 'center', color: '#ccc', padding: '2rem' }}>No products found</td></tr>}
             </tbody>
           </table>
         </div>
@@ -231,12 +244,19 @@ export default function Products() {
                         <label key={c.id}
                           onClick={() => {
                             if (isPrimary) return; // primary always checked
-                            setForm(f => ({
-                              ...f,
-                              category_ids: isChecked
+                            setForm(f => {
+                              const nextCatIds = isChecked
                                 ? f.category_ids.filter(id => id !== String(c.id))
-                                : [...f.category_ids, String(c.id)]
-                            }));
+                                : [...f.category_ids, String(c.id)];
+                              // If unchecking a category, also remove its subcategories from selection
+                              let nextSubIds = f.subcategory_ids;
+                              if (isChecked) {
+                                const removedCat = categories.find(cc => String(cc.id) === String(c.id));
+                                const removedSubIds = (removedCat?.subcategories || []).map(s => String(s.id));
+                                nextSubIds = f.subcategory_ids.filter(id => !removedSubIds.includes(id));
+                              }
+                              return { ...f, category_ids: nextCatIds, subcategory_ids: nextSubIds };
+                            });
                           }}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 6,
@@ -252,6 +272,51 @@ export default function Products() {
                     })}
                   </div>
                 </div>
+
+                {/* Multi-subcategory checkboxes — shows subcategories of all selected categories */}
+                {(() => {
+                  const selectedCatIds = new Set([form.category_id, ...form.category_ids].filter(Boolean).map(String));
+                  const availableSubs = categories
+                    .filter(c => selectedCatIds.has(String(c.id)))
+                    .flatMap(c => (c.subcategories || []).map(s => ({ ...s, parentName: c.name })));
+
+                  if (availableSubs.length === 0) return null;
+
+                  return (
+                    <div className="admin-form-group">
+                      <label className="admin-label">Subcategories <span style={{ color: '#888', fontWeight: 400, textTransform: 'none' }}>(tick all that apply — grouped by parent category)</span></label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, background: '#f9f9f9', borderRadius: 8, padding: 12, border: '1.5px solid #e8e8e8' }}>
+                        {availableSubs.map(s => {
+                          const isPrimary = String(s.id) === String(form.subcategory_id);
+                          const isChecked = isPrimary || form.subcategory_ids.includes(String(s.id));
+                          return (
+                            <label key={s.id}
+                              onClick={() => {
+                                if (isPrimary) return;
+                                setForm(f => ({
+                                  ...f,
+                                  subcategory_ids: isChecked
+                                    ? f.subcategory_ids.filter(id => id !== String(s.id))
+                                    : [...f.subcategory_ids, String(s.id)]
+                                }));
+                              }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '6px 14px', borderRadius: 20, cursor: isPrimary ? 'default' : 'pointer',
+                                background: isChecked ? '#7c3aed' : '#fff',
+                                color: isChecked ? '#fff' : '#555',
+                                border: `1.5px solid ${isChecked ? '#7c3aed' : '#e0e0e0'}`,
+                                fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+                              }}>
+                              {isChecked && '✓ '}{s.name}
+                              <span style={{ fontSize: 10, opacity: 0.7 }}>({s.parentName}{isPrimary ? ' · primary' : ''})</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Rich text description */}
                 <div className="admin-form-group">
