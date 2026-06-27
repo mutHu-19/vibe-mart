@@ -26,6 +26,7 @@ const NAV_SECTIONS = [
       { key: 'orders',        icon: '🛒', label: 'Orders',          roles: ['all'] },
       { key: 'expenses',      icon: '💸', label: 'Expenses',        roles: ['all'] },
       { key: 'reports',       icon: '📈', label: 'Reports & P&L',  roles: ['super_admin'] },
+      { key: 'outstanding-balances', icon: '💰', label: 'Outstanding Balances', roles: ['all'] },
     ]
   },
   {

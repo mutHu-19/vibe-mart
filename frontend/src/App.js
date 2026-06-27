@@ -29,6 +29,7 @@ import ChangePassword from './pages/admin/ChangePassword';
 import ShopPopup from './components/ShopPopup';
 import PopupSettings from './pages/admin/PopupSettings';
 import FloatingButtons from './components/FloatingButtons';
+import OutstandingBalances from './pages/admin/OutstandingBalances';
 
 function ShopNavbar() {
   const { count, setCartOpen } = useCart();
@@ -114,6 +115,7 @@ function AdminPageRenderer({ page }) {
     'bill-settings':   <BillSettings />,
     'change-password': <ChangePassword />,
     'popup-settings': <PopupSettings />,
+    'outstanding-balances': <OutstandingBalances />,
   };
 
   // If it's a super-admin-only page and user is not super admin

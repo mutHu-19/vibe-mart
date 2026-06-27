@@ -5,6 +5,8 @@ import { showToast } from '../../components/Toast';
 const PAYMENT_OPTS = [
   { val: 'cash',         icon: '💵', label: 'Cash' },
   { val: 'bank_deposit', icon: '🏦', label: 'Bank' },
+  { val: 'card',         icon: '💳', label: 'Card' },
+  { val: 'other',        icon: '📱', label: 'Other' },
 ];
 
 export default function NewBill() {
@@ -17,7 +19,9 @@ export default function NewBill() {
   const [payment,    setPayment]    = useState('cash');
   const [delivery,   setDelivery]   = useState('');
   const [discount,   setDiscount]   = useState('');
-  const [discountType, setDiscountType] = useState('fixed'); // 'fixed' | 'percent'
+  const [discountType, setDiscountType] = useState('fixed');
+  const [advancePaid, setAdvancePaid] = useState(''); // NEW: advance payment
+  const [hasAdvance, setHasAdvance] = useState(false); // toggle visibility
   const [notes,      setNotes]      = useState('');
   const [loading,    setLoading]    = useState(false);
   const [selProduct, setSelProduct] = useState(null);
@@ -71,6 +75,8 @@ export default function NewBill() {
       : parseFloat(discount)
     : 0;
   const grandTotal = subtotal + deliveryAmt - discountAmt;
+  const advanceAmt = hasAdvance && advancePaid ? Math.min(parseFloat(advancePaid) || 0, grandTotal) : 0;
+  const balanceDue = Math.max(0, grandTotal - advanceAmt);
 
   const handleCreateBill = async () => {
     if (!customer.name.trim()) { showToast('Customer name is required','error'); return; }
@@ -87,6 +93,7 @@ export default function NewBill() {
         delivery_charge:  deliveryAmt,
         discount:         discount||0,
         discount_type:    discountType,
+        advance_paid:     advanceAmt,
         notes,
         items: cart.map(i=>({ product_id:i.product_id, variant_id:i.variant_id, size:i.size, colour:i.colour, quantity:i.qty }))
       });
@@ -94,6 +101,7 @@ export default function NewBill() {
       showToast(`Invoice ${data.invoice.invoice_no} created! 🎉`,'success');
       setCart([]); setCustomer({name:'',phone:'',phone2:'',address:''});
       setPayment('cash'); setDelivery(''); setDiscount(''); setNotes('');
+      setAdvancePaid(''); setHasAdvance(false);
     } catch(err) { showToast(err.response?.data?.error||'Failed','error'); }
     setLoading(false);
   };
@@ -114,6 +122,7 @@ export default function NewBill() {
       th{text-align:left;font-size:10px;color:#555;border-bottom:1px solid #ddd;padding:3px 0}
       td{padding:4px 0;font-size:11px;vertical-align:top}
       .total-row{font-size:14px;font-weight:900}
+      .balance-row{font-size:13px;font-weight:900;color:#c00}
       .footer{margin-top:16px;text-align:center;font-size:10px;color:#888}
     </style></head><body>
     <div class="center">
@@ -147,6 +156,11 @@ export default function NewBill() {
     </span><span style="color:green">- Rs. ${parseFloat(inv.discount).toFixed(2)}</span></div>`:''}
     <div class="divider"></div>
     <div class="row total-row"><span>TOTAL</span><span>Rs. ${parseFloat(inv.total).toFixed(2)}</span></div>
+    ${inv.advance_paid > 0 ? `
+    <div class="row" style="color:#16a34a"><span>Advance Paid</span><span>- Rs. ${parseFloat(inv.advance_paid).toFixed(2)}</span></div>
+    <div class="divider"></div>
+    <div class="row balance-row"><span>BALANCE DUE</span><span>Rs. ${parseFloat(inv.balance_due).toFixed(2)}</span></div>
+    ` : ''}
     <div class="divider"></div>
     <div class="row"><span>Payment</span><span class="bold">${inv.payment_method?.replace('_',' ').toUpperCase()}</span></div>
     ${inv.notes?`<div style="margin-top:8px;font-size:11px;color:#555">Note: ${inv.notes}</div>`:''}
@@ -180,11 +194,11 @@ export default function NewBill() {
               {categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:8,maxHeight:'55vh',overflowY:'auto',paddingRight:4}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:8,maxHeight:'55vh',overflowY:'auto',paddingRight:4}} className="newbill-products">
             {filtered.map(p=>(
               <div key={p.id} onClick={()=>openProduct(p)}
                 style={{background:'#fff',borderRadius:8,overflow:'hidden',border:'1.5px solid #f0f0f0',cursor:'pointer',transition:'all 0.15s'}}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor='#e62e04';e.currentTarget.style.transform='translateY(-2px)';}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor='#0288d1';e.currentTarget.style.transform='translateY(-2px)';}}
                 onMouseLeave={e=>{e.currentTarget.style.borderColor='#f0f0f0';e.currentTarget.style.transform='none';}}>
                 {p.images?.[0]
                   ?<img src={p.images[0]} alt={p.name} style={{width:'100%',height:90,objectFit:'cover'}}/>
@@ -192,7 +206,7 @@ export default function NewBill() {
                 }
                 <div style={{padding:'8px 10px'}}>
                   <div style={{fontSize:12,fontWeight:600,lineHeight:1.3,marginBottom:3,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{p.name}</div>
-                  <div style={{fontSize:13,fontWeight:800,color:'#e62e04'}}>Rs. {parseFloat(p.price).toLocaleString()}</div>
+                  <div style={{fontSize:13,fontWeight:800,color:'#0277bd'}}>Rs. {parseFloat(p.price).toLocaleString()}</div>
                   <div style={{fontSize:10,color:p.total_stock>0?'#16a34a':'#e62e04',fontWeight:700}}>
                     {p.total_stock>0?`${p.total_stock} in stock`:'Out of stock'}
                   </div>
@@ -211,11 +225,11 @@ export default function NewBill() {
         {/* RIGHT — Bill builder */}
         <div style={{display:'flex',flexDirection:'column',gap:10,overflowY:'auto',maxHeight:'calc(100vh - 130px)'}}>
 
-          {/* Customer — REQUIRED */}
-          <div style={{background:'#fff',borderRadius:10,padding:12,border:'1.5px solid #e62e04'}}>
+          {/* Customer */}
+          <div style={{background:'#fff',borderRadius:10,padding:12,border:'1.5px solid #0288d1'}}>
             <div style={{fontWeight:800,fontSize:13,marginBottom:8,display:'flex',alignItems:'center',gap:6}}>
               👤 Customer Details
-              <span style={{fontSize:10,background:'#fff1ee',color:'#e62e04',padding:'2px 7px',borderRadius:10,fontWeight:700}}>Required</span>
+              <span style={{fontSize:10,background:'#e0f0ff',color:'#0277bd',padding:'2px 7px',borderRadius:10,fontWeight:700}}>Required</span>
             </div>
             <div className="admin-form-group">
               <label className="admin-label">Full Name *</label>
@@ -264,7 +278,7 @@ export default function NewBill() {
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:600,fontSize:12,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis'}}>{item.product_name}</div>
                     <div style={{fontSize:11,color:'#aaa'}}>{[item.colour,item.size].filter(Boolean).join(' · ')}</div>
-                    <div style={{fontWeight:700,fontSize:12,color:'#e62e04'}}>Rs. {(item.price*item.qty).toLocaleString()}</div>
+                    <div style={{fontWeight:700,fontSize:12,color:'#0277bd'}}>Rs. {(item.price*item.qty).toLocaleString()}</div>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:4,flexShrink:0}}>
                     <button onClick={()=>updateQty(item.key,item.qty-1)} style={{width:22,height:22,border:'1px solid #e8e8e8',borderRadius:4,background:'#fff',cursor:'pointer',fontWeight:700}}>−</button>
@@ -295,7 +309,6 @@ export default function NewBill() {
                 <span style={{fontSize:12,color:'#555',fontWeight:700,flexShrink:0,minWidth:62}}>🏷️ Discount</span>
                 <input value={discount} onChange={e=>setDiscount(e.target.value)} type="number" min="0"
                   placeholder={discountType==='percent'?'e.g. 10':'Rs. 0'} className="admin-input" style={{flex:1}}/>
-                {/* Toggle fixed/percent */}
                 <div style={{display:'flex',border:'1.5px solid #e8e8e8',borderRadius:4,overflow:'hidden',flexShrink:0}}>
                   <button type="button" onClick={()=>setDiscountType('fixed')}
                     style={{padding:'7px 10px',border:'none',background:discountType==='fixed'?'#e62e04':'#fff',color:discountType==='fixed'?'#fff':'#555',fontSize:11,fontWeight:800,cursor:'pointer'}}>
@@ -314,28 +327,77 @@ export default function NewBill() {
               )}
             </div>
 
-            {/* Grand total */}
-            <div style={{display:'flex',justifyContent:'space-between',fontWeight:900,fontSize:16,padding:'8px 0',borderTop:'2px solid #f0f0f0',marginBottom:10}}>
-              <span>Total</span><span style={{color:'#e62e04'}}>Rs. {grandTotal.toLocaleString()}</span>
+            {/* Total before advance */}
+            <div style={{display:'flex',justifyContent:'space-between',fontWeight:800,fontSize:14,padding:'8px 0',borderTop:'1px solid #f0f0f0'}}>
+              <span>Bill Total</span><span style={{color:'#1b1b1b'}}>Rs. {grandTotal.toLocaleString()}</span>
+            </div>
+
+            {/* ── ADVANCE PAYMENT SECTION ── */}
+            <div style={{ marginTop: 4, marginBottom: 10 }}>
+              {!hasAdvance ? (
+                <button type="button" onClick={() => setHasAdvance(true)}
+                  style={{ width: '100%', background: '#f0f7ff', border: '1.5px dashed #0288d1', borderRadius: 6, padding: '8px', color: '#0277bd', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                  💰 + Add Advance Payment (for bulk orders)
+                </button>
+              ) : (
+                <div style={{ background: '#f0f7ff', border: '1.5px solid #0288d1', borderRadius: 8, padding: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#0277bd' }}>💰 Advance Payment Received</span>
+                    <button type="button" onClick={() => { setHasAdvance(false); setAdvancePaid(''); }}
+                      style={{ background: 'none', border: 'none', color: '#888', fontSize: 16, cursor: 'pointer', fontWeight: 900 }}>×</button>
+                  </div>
+                  <input
+                    value={advancePaid}
+                    onChange={e => setAdvancePaid(e.target.value)}
+                    type="number" min="0" max={grandTotal}
+                    placeholder="Amount customer paid in advance"
+                    className="admin-input"
+                    autoFocus
+                  />
+                  {advanceAmt > 0 && (
+                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#16a34a', fontWeight: 700 }}>
+                        <span>Advance Received</span><span>- Rs. {advanceAmt.toLocaleString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 900, color: balanceDue > 0 ? '#dc2626' : '#16a34a', borderTop: '1px solid #b3d9f5', paddingTop: 4, marginTop: 2 }}>
+                        <span>Balance Due</span><span>Rs. {balanceDue.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+                  {parseFloat(advancePaid) > grandTotal && (
+                    <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>⚠️ Capped at bill total</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Grand total / Balance Due display */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: 17, padding: '10px 0', borderTop: '2px solid #f0f0f0', marginBottom: 10, background: hasAdvance && advanceAmt > 0 ? '#fef2f2' : 'transparent', borderRadius: 6 }}>
+              <span style={{ paddingLeft: hasAdvance && advanceAmt > 0 ? 8 : 0 }}>
+                {hasAdvance && advanceAmt > 0 ? 'Balance Due' : 'Total'}
+              </span>
+              <span style={{ color: '#e62e04', paddingRight: hasAdvance && advanceAmt > 0 ? 8 : 0 }}>
+                Rs. {(hasAdvance && advanceAmt > 0 ? balanceDue : grandTotal).toLocaleString()}
+              </span>
             </div>
 
             {/* Notes */}
             <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="📝 Notes (optional)"
-              className="admin-input" style={{marginBottom:10,fontSize:12}}/>
+              className="admin-input" style={{ marginBottom: 10, fontSize: 12 }} />
 
             {/* Payment */}
             <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5,marginBottom:10}}>
               {PAYMENT_OPTS.map(opt=>(
                 <div key={opt.val} onClick={()=>setPayment(opt.val)}
-                  style={{border:`1.5px solid ${payment===opt.val?'#e62e04':'#e8e8e8'}`,borderRadius:6,padding:'7px 4px',cursor:'pointer',textAlign:'center',background:payment===opt.val?'#fff1ee':'#fff',transition:'all 0.15s'}}>
+                  style={{border:`1.5px solid ${payment===opt.val?'#0288d1':'#e8e8e8'}`,borderRadius:6,padding:'7px 4px',cursor:'pointer',textAlign:'center',background:payment===opt.val?'#e0f0ff':'#fff',transition:'all 0.15s'}}>
                   <div style={{fontSize:16,marginBottom:2}}>{opt.icon}</div>
-                  <div style={{fontSize:10,fontWeight:700,color:payment===opt.val?'#e62e04':'#555'}}>{opt.label}</div>
+                  <div style={{fontSize:10,fontWeight:700,color:payment===opt.val?'#0277bd':'#555'}}>{opt.label}</div>
                 </div>
               ))}
             </div>
 
             <button onClick={handleCreateBill} disabled={loading||!cart.length||!customer.name.trim()||!customer.phone.trim()}
-              style={{width:'100%',background:(cart.length&&customer.name.trim()&&customer.phone.trim())?'#e62e04':'#ccc',color:'#fff',border:'none',padding:'12px',borderRadius:6,fontWeight:800,fontSize:14,cursor:(cart.length&&customer.name.trim()&&customer.phone.trim())?'pointer':'not-allowed',transition:'all 0.2s'}}>
+              style={{width:'100%',background:(cart.length&&customer.name.trim()&&customer.phone.trim())?'#0288d1':'#ccc',color:'#fff',border:'none',padding:'12px',borderRadius:6,fontWeight:800,fontSize:14,cursor:(cart.length&&customer.name.trim()&&customer.phone.trim())?'pointer':'not-allowed',transition:'all 0.2s'}}>
               {loading?'⏳ Creating…':`🧾 Create Bill — Rs. ${grandTotal.toLocaleString()}`}
             </button>
 
@@ -357,7 +419,7 @@ export default function NewBill() {
               <button onClick={()=>setSelProduct(null)} className="modal-close" style={{position:'static'}}>×</button>
             </div>
             <div style={{padding:'16px 18px'}}>
-              <div style={{fontSize:18,fontWeight:900,color:'#e62e04',marginBottom:16}}>Rs. {parseFloat(selProduct.price).toLocaleString()}</div>
+              <div style={{fontSize:18,fontWeight:900,color:'#0277bd',marginBottom:16}}>Rs. {parseFloat(selProduct.price).toLocaleString()}</div>
               {colours.length>0&&(
                 <div style={{marginBottom:14}}>
                   <div style={{fontSize:11,fontWeight:800,color:'#aaa',textTransform:'uppercase',marginBottom:8}}>Colour {selVariant?.colour&&`— ${selVariant.colour}`}</div>
@@ -365,8 +427,8 @@ export default function NewBill() {
                     {colours.map(v=>(
                       <div key={v.colour} onClick={()=>setSelVariant(v)} title={v.colour}
                         style={{width:32,height:32,borderRadius:'50%',background:v.colour_hex||'#ccc',cursor:'pointer',
-                          border:`3px solid ${selVariant?.colour===v.colour?'#e62e04':'transparent'}`,
-                          outline:`2px solid ${selVariant?.colour===v.colour?'#e62e04':'#e8e8e8'}`,
+                          border:`3px solid ${selVariant?.colour===v.colour?'#0288d1':'transparent'}`,
+                          outline:`2px solid ${selVariant?.colour===v.colour?'#0288d1':'#e8e8e8'}`,
                           transition:'all 0.15s',transform:selVariant?.colour===v.colour?'scale(1.15)':'scale(1)'}}/>
                     ))}
                   </div>
@@ -378,14 +440,14 @@ export default function NewBill() {
                   <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                     {sizes.map(s=>(
                       <button key={s} onClick={()=>setSelVariant(variants.find(v=>v.size===s))}
-                        style={{padding:'5px 14px',border:`2px solid ${selVariant?.size===s?'#e62e04':'#e8e8e8'}`,borderRadius:4,background:selVariant?.size===s?'#fff1ee':'#fff',color:selVariant?.size===s?'#e62e04':'#555',fontWeight:700,fontSize:13,cursor:'pointer'}}>
+                        style={{padding:'5px 14px',border:`2px solid ${selVariant?.size===s?'#0288d1':'#e8e8e8'}`,borderRadius:4,background:selVariant?.size===s?'#e0f0ff':'#fff',color:selVariant?.size===s?'#0277bd':'#555',fontWeight:700,fontSize:13,cursor:'pointer'}}>
                         {s}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-              <button onClick={addToCart} style={{width:'100%',background:'#e62e04',color:'#fff',border:'none',padding:'12px',borderRadius:6,fontWeight:800,fontSize:14,cursor:'pointer'}}>
+              <button onClick={addToCart} style={{width:'100%',background:'#0288d1',color:'#fff',border:'none',padding:'12px',borderRadius:6,fontWeight:800,fontSize:14,cursor:'pointer'}}>
                 + Add to Bill
               </button>
             </div>
@@ -397,19 +459,18 @@ export default function NewBill() {
       {invoice&&(
         <div className="modal-overlay" onClick={()=>setInvoice(null)}>
           <div className="modal-box" style={{maxWidth:440,borderRadius:12,padding:0}} onClick={e=>e.stopPropagation()}>
-            <div style={{background:'#e62e04',color:'#fff',padding:'14px 18px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div style={{background:'#0288d1',color:'#fff',padding:'14px 18px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <h3 style={{fontWeight:800,fontSize:15}}>🧾 Invoice Created!</h3>
               <button onClick={()=>setInvoice(null)} style={{background:'rgba(255,255,255,0.2)',border:'none',color:'#fff',borderRadius:'50%',width:28,height:28,cursor:'pointer',fontSize:16}}>×</button>
             </div>
             <div style={{padding:'16px 18px'}}>
-              {/* Preview */}
               <div style={{background:'#f9f9f9',borderRadius:8,padding:14,marginBottom:14,fontSize:13}}>
                 <div style={{textAlign:'center',marginBottom:10}}>
                   <div style={{fontWeight:900,fontSize:15}}>{JSON.parse(localStorage.getItem('shoplk_bill_settings')||'{}').shop_name||'ShopLK'}</div>
                   <div style={{fontSize:11,color:'#888'}}>{new Date(invoice.created_at).toLocaleString()}</div>
                 </div>
                 <div style={{borderTop:'1px dashed #ddd',paddingTop:8}}>
-                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}><span style={{color:'#888'}}>Invoice</span><strong style={{color:'#e62e04'}}>{invoice.invoice_no}</strong></div>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}><span style={{color:'#888'}}>Invoice</span><strong style={{color:'#0277bd'}}>{invoice.invoice_no}</strong></div>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}><span style={{color:'#888'}}>Customer</span><span style={{fontWeight:700}}>{invoice.customer_name}</span></div>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}><span style={{color:'#888'}}>Phone 1</span><span>{invoice.customer_phone}</span></div>
                   {invoice.customer_phone2&&<div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}><span style={{color:'#888'}}>Phone 2</span><span>{invoice.customer_phone2}</span></div>}
@@ -426,8 +487,17 @@ export default function NewBill() {
                 <div style={{borderTop:'1px dashed #ddd',marginTop:8,paddingTop:8}}>
                   <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3}}><span>Subtotal</span><span>Rs. {parseFloat(invoice.subtotal).toLocaleString()}</span></div>
                   {invoice.delivery_charge>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3}}><span>Delivery</span><span>Rs. {parseFloat(invoice.delivery_charge).toLocaleString()}</span></div>}
-                  {invoice.discount>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3,color:'#16a34a'}}><span>Discount{invoice.discount_type==='percent'?` (${invoice.discount_input}%)`  :''}</span><span>- Rs. {parseFloat(invoice.discount).toLocaleString()}</span></div>}
-                  <div style={{display:'flex',justifyContent:'space-between',fontWeight:900,fontSize:15,marginTop:6}}><span>TOTAL</span><span style={{color:'#e62e04'}}>Rs. {parseFloat(invoice.total).toLocaleString()}</span></div>
+                  {invoice.discount>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3,color:'#16a34a'}}><span>Discount{invoice.discount_type==='percent'?` (${invoice.discount_input}%)` :''}</span><span>- Rs. {parseFloat(invoice.discount).toLocaleString()}</span></div>}
+                  <div style={{display:'flex',justifyContent:'space-between',fontWeight:900,fontSize:15,marginTop:6}}><span>TOTAL</span><span style={{color:'#0277bd'}}>Rs. {parseFloat(invoice.total).toLocaleString()}</span></div>
+
+                  {/* Advance + balance display */}
+                  {invoice.advance_paid > 0 && (
+                    <>
+                      <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginTop:6,color:'#16a34a',fontWeight:700}}><span>Advance Paid</span><span>- Rs. {parseFloat(invoice.advance_paid).toLocaleString()}</span></div>
+                      <div style={{display:'flex',justifyContent:'space-between',fontWeight:900,fontSize:16,marginTop:6,paddingTop:6,borderTop:'1px solid #fca5a5',color:'#dc2626'}}><span>BALANCE DUE</span><span>Rs. {parseFloat(invoice.balance_due).toLocaleString()}</span></div>
+                    </>
+                  )}
+
                   <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginTop:4,color:'#888'}}><span>Payment</span><span>{invoice.payment_method?.replace('_',' ').toUpperCase()}</span></div>
                 </div>
               </div>
