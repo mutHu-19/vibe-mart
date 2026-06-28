@@ -8,9 +8,12 @@ const STATUS_COLORS = {
   delivered:{bg:'#d4edda',color:'#155724'}, cancelled:{bg:'#f8d7da',color:'#721c24'}
 };
 
-function printInvoice(inv, isBill=false) {
+function printInvoice(inv) {
   const shop = JSON.parse(localStorage.getItem('shoplk_bill_settings')||'{}');
   const w = window.open('','_blank','width=420,height=700');
+  const advancePaid = parseFloat(inv.advance_paid || 0);
+  const balanceDue = parseFloat(inv.balance_due ?? (parseFloat(inv.total) - advancePaid));
+
   w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${inv.invoice_no}</title>
   <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;padding:16px;color:#000}
   h1{font-size:16px;font-weight:900}.center{text-align:center}.divider{border-top:1px dashed #999;margin:8px 0}
@@ -18,6 +21,7 @@ function printInvoice(inv, isBill=false) {
   table{width:100%;border-collapse:collapse;margin:6px 0}
   th{text-align:left;font-size:10px;color:#555;border-bottom:1px solid #ddd;padding:3px 0}
   td{padding:4px 0;font-size:11px;vertical-align:top}.total-row{font-size:14px;font-weight:900}
+  .balance-row{font-size:13px;font-weight:900;color:#c00}
   .footer{margin-top:16px;text-align:center;font-size:10px;color:#888}</style></head><body>
   <div class="center"><h1>${shop.shop_name||'ShopLK'}</h1>
   ${shop.address?`<p>${shop.address}</p>`:''}${shop.phone?`<p>${shop.phone}</p>`:''}
@@ -42,6 +46,11 @@ function printInvoice(inv, isBill=false) {
   ${inv.discount>0?`<div class="row"><span>Discount</span><span style="color:green">- Rs. ${parseFloat(inv.discount).toFixed(2)}</span></div>`:''}
   <div class="divider"></div>
   <div class="row total-row"><span>TOTAL</span><span>Rs. ${parseFloat(inv.total).toFixed(2)}</span></div>
+  ${advancePaid > 0 ? `
+  <div class="row" style="color:green"><span>Advance Paid</span><span>- Rs. ${advancePaid.toFixed(2)}</span></div>
+  <div class="divider"></div>
+  <div class="row balance-row"><span>BALANCE DUE</span><span>Rs. ${balanceDue.toFixed(2)}</span></div>
+  ` : ''}
   <div class="divider"></div>
   <div class="row"><span>Payment</span><span class="bold">${(inv.payment_method||'').replace('_',' ').toUpperCase()}</span></div>
   ${inv.notes?`<div style="margin-top:8px;font-size:11px;color:#555">Note: ${inv.notes}</div>`:''}
@@ -51,7 +60,7 @@ function printInvoice(inv, isBill=false) {
 }
 
 export default function Invoices() {
-  const [tab, setTab] = useState('bills'); // 'bills' | 'orders' | 'returns'
+  const [tab, setTab] = useState('bills');
   const [bills, setBills] = useState([]);
   const [orders, setOrders] = useState([]);
   const [returnsList, setReturnsList] = useState([]);
@@ -137,6 +146,9 @@ export default function Invoices() {
 
   if (loading) return <div className="loading-wrap"><div className="spinner"/></div>;
 
+  // Total outstanding across all bills (for quick visibility on this tab)
+  const totalOutstanding = bills.reduce((s, b) => s + parseFloat(b.balance_due || 0), 0);
+
   return (
     <>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14,flexWrap:'wrap',gap:10}}>
@@ -144,13 +156,19 @@ export default function Invoices() {
           <h2 style={{fontWeight:800,fontSize:18,marginBottom:2}}>Invoices & Returns</h2>
           <p style={{color:'#888',fontSize:12}}>{bills.length} bills · {orders.length} web orders · {returnsList.length} returns</p>
         </div>
+        {totalOutstanding > 0 && (
+          <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, padding: '8px 16px', textAlign: 'right' }}>
+            <div style={{ fontSize: 10, color: '#dc2626', fontWeight: 700, textTransform: 'uppercase' }}>Total Outstanding</div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: '#dc2626' }}>Rs. {totalOutstanding.toLocaleString()}</div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
       <div style={{display:'flex',gap:0,marginBottom:14,background:'#fff',borderRadius:8,border:'1px solid #f0f0f0',overflow:'hidden',width:'fit-content'}}>
         {[{key:'bills',label:`🧾 Bills (${bills.length})`},{key:'orders',label:`🛒 Web Orders (${orders.length})`},{key:'returns',label:`↩️ Returns (${returnsList.length})`}].map(t=>(
           <button key={t.key} onClick={()=>setTab(t.key)}
-            style={{padding:'9px 18px',border:'none',background:tab===t.key?'#e62e04':'#fff',color:tab===t.key?'#fff':'#555',fontWeight:700,fontSize:13,cursor:'pointer',transition:'all 0.15s'}}>
+            style={{padding:'9px 18px',border:'none',background:tab===t.key?'#0288d1':'#fff',color:tab===t.key?'#fff':'#555',fontWeight:700,fontSize:13,cursor:'pointer',transition:'all 0.15s'}}>
             {t.label}
           </button>
         ))}
@@ -165,26 +183,34 @@ export default function Invoices() {
         <div className="admin-card">
           <div style={{overflowX:'auto'}}>
             <table className="admin-table">
-              <thead><tr><th>Invoice</th><th>Customer</th><th>Phone</th><th>Items</th><th>Total</th><th>Discount</th><th>Payment</th><th>Date</th><th></th></tr></thead>
+              <thead><tr><th>Invoice</th><th>Customer</th><th>Phone</th><th>Items</th><th>Total</th><th>Advance</th><th>Balance Due</th><th>Discount</th><th>Payment</th><th>Date</th><th></th></tr></thead>
               <tbody>
-                {filterFn(bills,['invoice_no','customer_name','customer_phone']).map(b=>(
-                  <tr key={b.id}>
-                    <td><strong style={{color:'#e62e04',fontSize:12}}>{b.invoice_no}</strong></td>
-                    <td style={{fontWeight:600}}>{b.customer_name}</td>
-                    <td style={{fontSize:12,color:'#888'}}>{b.customer_phone}</td>
-                    <td>{b.item_count}</td>
-                    <td style={{fontWeight:700}}>Rs. {parseFloat(b.total).toLocaleString()}</td>
-                    <td style={{fontSize:12,color:'#16a34a'}}>{b.discount>0?`Rs. ${parseFloat(b.discount).toLocaleString()}`:'—'}</td>
-                    <td style={{fontSize:12}}>{b.payment_method?.replace('_',' ')}</td>
-                    <td style={{fontSize:12,color:'#aaa'}}>{new Date(b.created_at).toLocaleDateString()}</td>
-                    <td>
-                      <div style={{display:'flex',gap:4}}>
+                {filterFn(bills,['invoice_no','customer_name','customer_phone']).map(b=>{
+                  const advance = parseFloat(b.advance_paid || 0);
+                  const balance = parseFloat(b.balance_due ?? 0);
+                  return (
+                    <tr key={b.id}>
+                      <td><strong style={{color:'#0277bd',fontSize:12}}>{b.invoice_no}</strong></td>
+                      <td style={{fontWeight:600}}>{b.customer_name}</td>
+                      <td style={{fontSize:12,color:'#888'}}>{b.customer_phone}</td>
+                      <td>{b.item_count}</td>
+                      <td style={{fontWeight:700}}>Rs. {parseFloat(b.total).toLocaleString()}</td>
+                      <td style={{fontSize:12,color: advance > 0 ? '#16a34a' : '#ccc',fontWeight:700}}>
+                        {advance > 0 ? `Rs. ${advance.toLocaleString()}` : '—'}
+                      </td>
+                      <td style={{fontSize:12,fontWeight: balance > 0 ? 900 : 400, color: balance > 0 ? '#dc2626' : '#ccc'}}>
+                        {balance > 0 ? `Rs. ${balance.toLocaleString()}` : (advance > 0 ? '✅ Paid' : '—')}
+                      </td>
+                      <td style={{fontSize:12,color:'#16a34a'}}>{b.discount>0?`Rs. ${parseFloat(b.discount).toLocaleString()}`:'—'}</td>
+                      <td style={{fontSize:12}}>{b.payment_method?.replace('_',' ')}</td>
+                      <td style={{fontSize:12,color:'#aaa'}}>{new Date(b.created_at).toLocaleDateString()}</td>
+                      <td>
                         <button className="btn btn-outline btn-sm" onClick={()=>openBill(b)}>View</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {bills.length===0&&<tr><td colSpan={9} style={{textAlign:'center',color:'#ccc',padding:'2rem'}}>No bills yet</td></tr>}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {bills.length===0&&<tr><td colSpan={11} style={{textAlign:'center',color:'#ccc',padding:'2rem'}}>No bills yet</td></tr>}
               </tbody>
             </table>
           </div>
@@ -200,7 +226,7 @@ export default function Invoices() {
               <tbody>
                 {filterFn(orders,['invoice_no','customer_name','customer_phone']).map(o=>(
                   <tr key={o.id}>
-                    <td><strong style={{color:'#e62e04',fontSize:12}}>{o.invoice_no}</strong></td>
+                    <td><strong style={{color:'#0277bd',fontSize:12}}>{o.invoice_no}</strong></td>
                     <td style={{fontWeight:600}}>{o.customer_name}</td>
                     <td style={{fontSize:12,color:'#888'}}>{o.customer_phone}</td>
                     <td style={{fontWeight:700}}>Rs. {parseFloat(o.total).toLocaleString()}</td>
@@ -245,7 +271,7 @@ export default function Invoices() {
       {selected&&(
         <div className="modal-overlay" onClick={()=>setSelected(null)}>
           <div className="modal-box" style={{maxWidth:560,borderRadius:12,padding:0}} onClick={e=>e.stopPropagation()}>
-            <div style={{background:selected._type==='return'?'#7c3aed':selected._type==='bill'?'#e62e04':'#0a68f4',color:'#fff',padding:'14px 18px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div style={{background:selected._type==='return'?'#7c3aed':selected._type==='bill'?'#0288d1':'#0a68f4',color:'#fff',padding:'14px 18px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
                 <div style={{fontWeight:800,fontSize:15}}>{selected.invoice_no}</div>
                 <div style={{fontSize:11,opacity:0.7}}>{new Date(selected.created_at).toLocaleString()}</div>
@@ -253,7 +279,7 @@ export default function Invoices() {
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 {selected._type==='bill'&&(
                   <>
-                    <button onClick={()=>printInvoice(selected,true)} style={{background:'rgba(255,255,255,0.2)',border:'none',color:'#fff',padding:'6px 12px',borderRadius:6,fontWeight:700,fontSize:12,cursor:'pointer'}}>🖨️ Print</button>
+                    <button onClick={()=>printInvoice(selected)} style={{background:'rgba(255,255,255,0.2)',border:'none',color:'#fff',padding:'6px 12px',borderRadius:6,fontWeight:700,fontSize:12,cursor:'pointer'}}>🖨️ Print</button>
                     <button onClick={()=>startReturn(selected)} style={{background:'rgba(255,255,255,0.2)',border:'none',color:'#fff',padding:'6px 12px',borderRadius:6,fontWeight:700,fontSize:12,cursor:'pointer'}}>↩️ Return</button>
                   </>
                 )}
@@ -283,18 +309,36 @@ export default function Invoices() {
                       <td>{it.colour||'—'}</td>
                       <td>{it.size||'—'}</td>
                       <td style={{fontWeight:700}}>{it.quantity||it.qty||1}</td>
-                      <td style={{fontWeight:700,color:'#e62e04'}}>Rs. {parseFloat(it.total_price||(it.unit_price*(it.quantity||1))||0).toLocaleString()}</td>
+                      <td style={{fontWeight:700,color:'#0277bd'}}>Rs. {parseFloat(it.total_price||(it.unit_price*(it.quantity||1))||0).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {/* Totals */}
+              {/* Totals — now includes advance + balance for bills */}
               <div style={{background:'#f9f9f9',borderRadius:8,padding:'10px 14px'}}>
-                {[['Subtotal',`Rs. ${parseFloat(selected.subtotal||selected.total||0).toLocaleString()}`],selected.delivery_charge>0&&['Delivery',`Rs. ${parseFloat(selected.delivery_charge).toLocaleString()}`],selected.discount>0&&['Discount',`- Rs. ${parseFloat(selected.discount).toLocaleString()}`],['TOTAL',`Rs. ${parseFloat(selected.total).toLocaleString()}`]].filter(Boolean).map(([k,v],i,arr)=>(
-                  <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'3px 0',fontWeight:i===arr.length-1?900:400,fontSize:i===arr.length-1?15:13,borderTop:i===arr.length-1?'1px solid #e8e8e8':'none',marginTop:i===arr.length-1?6:0,paddingTop:i===arr.length-1?6:3,color:k==='Discount'?'#16a34a':k==='TOTAL'?'#e62e04':'inherit'}}>
+                {[
+                  ['Subtotal', `Rs. ${parseFloat(selected.subtotal||selected.total||0).toLocaleString()}`],
+                  selected.delivery_charge > 0 && ['Delivery', `Rs. ${parseFloat(selected.delivery_charge).toLocaleString()}`],
+                  selected.discount > 0 && ['Discount', `- Rs. ${parseFloat(selected.discount).toLocaleString()}`],
+                  ['TOTAL', `Rs. ${parseFloat(selected.total).toLocaleString()}`],
+                ].filter(Boolean).map(([k, v], i, arr) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontWeight: i === arr.length - 1 ? 900 : 400, fontSize: i === arr.length - 1 ? 15 : 13, borderTop: i === arr.length - 1 ? '1px solid #e8e8e8' : 'none', marginTop: i === arr.length - 1 ? 6 : 0, paddingTop: i === arr.length - 1 ? 6 : 3, color: k === 'Discount' ? '#16a34a' : k === 'TOTAL' ? '#0277bd' : 'inherit' }}>
                     <span>{k}</span><span>{v}</span>
                   </div>
                 ))}
+
+                {/* Advance payment + balance due — only for bills with advance_paid > 0 */}
+                {selected._type === 'bill' && parseFloat(selected.advance_paid || 0) > 0 && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 3px', fontSize: 13, fontWeight: 700, color: '#16a34a' }}>
+                      <span>Advance Paid</span><span>- Rs. {parseFloat(selected.advance_paid).toLocaleString()}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', marginTop: 4, borderTop: '1px solid #fca5a5', fontSize: 16, fontWeight: 900, color: '#dc2626' }}>
+                      <span>BALANCE DUE</span>
+                      <span>Rs. {parseFloat(selected.balance_due ?? (selected.total - selected.advance_paid)).toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
               </div>
               {selected.notes&&<div style={{marginTop:10,fontSize:12,color:'#888',padding:'8px 10px',background:'#fffbeb',borderRadius:6}}>📝 {selected.notes}</div>}
             </div>
@@ -320,7 +364,7 @@ export default function Invoices() {
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:700,fontSize:13}}>{item.product_name}</div>
                     <div style={{fontSize:11,color:'#aaa'}}>{[item.colour,item.size].filter(Boolean).join(' · ')} · Purchased: {item.quantity}</div>
-                    <div style={{fontSize:12,color:'#e62e04',fontWeight:700}}>Rs. {parseFloat(item.unit_price).toLocaleString()}/unit</div>
+                    <div style={{fontSize:12,color:'#0277bd',fontWeight:700}}>Rs. {parseFloat(item.unit_price).toLocaleString()}/unit</div>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
                     <span style={{fontSize:11,color:'#888',fontWeight:600}}>Return:</span>
