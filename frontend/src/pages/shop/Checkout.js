@@ -6,7 +6,7 @@ import api from '../../utils/api';
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', phone: '', address: '', payment: 'cod' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', payment: 'cash_on_delivery' });
   const [loading, setLoading] = useState(false);
 
   // Push a history entry when this page mounts, so the back button
@@ -111,8 +111,8 @@ export default function Checkout() {
               <h3>💳 Payment Method</h3>
               <div className="pay-opts">
                 {[
-                  { val: 'cod', icon: '💵', title: 'Cash on Delivery', desc: 'Pay when you receive' },
-                  { val: 'bank_deposit', icon: '🏦', title: 'Bank Deposit', desc: 'Transfer before delivery' },
+                  { val: 'cash_on_delivery', icon: '💵', title: 'Cash on Delivery', desc: 'Pay when you receive' },
+                  { val: 'bank_deposit',     icon: '🏦', title: 'Bank Deposit',      desc: 'Transfer before delivery' },
                 ].map(opt => (
                   <div key={opt.val} className={`pay-opt ${form.payment === opt.val ? 'selected' : ''}`}
                     onClick={() => setForm(f => ({ ...f, payment: opt.val }))}>
