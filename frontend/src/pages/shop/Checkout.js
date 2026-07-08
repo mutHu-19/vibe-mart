@@ -6,7 +6,7 @@ import api from '../../utils/api';
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', phone: '', address: '', payment: 'cod', notes: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', payment: 'cod' });
   const [loading, setLoading] = useState(false);
 
   // Push a history entry when this page mounts, so the back button
@@ -28,47 +28,39 @@ export default function Checkout() {
     if (!form.name || !form.phone || !form.address) return;
     setLoading(true);
     try {
-      const subtotal = total;
-      const delivery = 0;
-      const grandTotal = subtotal + delivery;
-      const invoice_no = `WEB-${Date.now()}`;
-
-      const orderData = {
-        invoice_no,
-        customer_name: form.name,
-        customer_phone: form.phone,
+      // Send exactly what the backend expects — no invoice_no (backend generates it),
+      // no notes field (not in orders table)
+      const { data } = await api.post('/orders', {
+        customer_name:    form.name,
+        customer_phone:   form.phone,
         customer_address: form.address,
-        payment_method: form.payment,
-        notes: form.notes,
-        subtotal,
-        delivery_charge: delivery,
-        total: grandTotal,
+        payment_method:   form.payment,
+        delivery_charge:  0,
         items: items.map(i => ({
           product_id: i.product_id,
-          variant_id: i.variant_id,
-          product_name: i.name,
-          colour: i.colour,
-          size: i.size,
-          quantity: i.quantity,
-          unit_price: i.price,
-          total_price: i.price * i.quantity,
+          variant_id: i.variant_id || null,
+          size:        i.size   || null,
+          colour:      i.colour || null,
+          quantity:    i.quantity,
         })),
-      };
+      });
 
-      await api.post('/orders', orderData);
-
-      // WhatsApp message
-      const wa = process.env.REACT_APP_WHATSAPP || '94766522855';
-      const itemLines = items.map(i =>
-        `• ${i.name}${i.colour ? ` (${i.colour})` : ''}${i.size ? ` ${i.size}` : ''} x${i.quantity} = Rs.${(i.price * i.quantity).toLocaleString()}`
-      ).join('\n');
-      const msg = `🛒 *New Order — ${invoice_no}*\n\n👤 *${form.name}*\n📞 ${form.phone}\n📍 ${form.address}\n\n${itemLines}\n\n💰 *Total: Rs.${grandTotal.toLocaleString()}*\n💳 Payment: ${form.payment === 'cod' ? 'Cash on Delivery' : 'Bank Deposit'}\n${form.notes ? `\n📝 ${form.notes}` : ''}`;
-      window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
+      // Use the WhatsApp URL the backend built (it has the full formatted message)
+      if (data.whatsapp_url) {
+        window.open(data.whatsapp_url, '_blank');
+      }
 
       clearCart();
-      navigate('/order-success', { state: { invoice_no, total: grandTotal, name: form.name } });
+      navigate('/order-success', {
+        state: {
+          invoice_no: data.invoice_no,
+          total:      data.total,
+          name:       form.name,
+        }
+      });
     } catch (err) {
-      alert('Order failed. Please try again.');
+      const msg = err.response?.data?.error || 'Order failed. Please try again.';
+      alert(msg);
     }
     setLoading(false);
   };
@@ -112,10 +104,6 @@ export default function Checkout() {
               <div className="form-group">
                 <label className="form-label">Delivery Address *</label>
                 <textarea className="form-input" rows={3} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="House number, street, city" required style={{ resize: 'vertical' }} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Notes (optional)</label>
-                <input className="form-input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any special instructions" />
               </div>
             </div>
 
