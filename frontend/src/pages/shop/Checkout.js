@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import api from '../../utils/api';
+import { RichTextDisplay } from '../../components/RichTextEditor';
 
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', phone: '', address: '', payment: 'cash_on_delivery' });
   const [loading, setLoading] = useState(false);
+  const [content, setContent] = useState({ process_info: '', cod_info: '', bank_info: '' });
+
+  // Admin-editable checkout page content (process info + payment instructions)
+  useEffect(() => {
+    api.get('/checkout-content').then(r => {
+      if (r.data) setContent({
+        process_info: r.data.process_info || '',
+        cod_info: r.data.cod_info || '',
+        bank_info: r.data.bank_info || '',
+      });
+    }).catch(() => {});
+  }, []);
 
   // Push a history entry when this page mounts, so the back button
   // goes to the shop (home) instead of exiting the site
@@ -122,6 +135,18 @@ export default function Checkout() {
                   </div>
                 ))}
               </div>
+
+              {/* Admin-editable: instructions for the selected payment method */}
+              {form.payment === 'cash_on_delivery' && content.cod_info && (
+                <div style={{ marginTop: 14, padding: '12px 14px', background: '#f9fafb', borderRadius: 8, border: '1px solid #eee' }}>
+                  <RichTextDisplay html={content.cod_info} />
+                </div>
+              )}
+              {form.payment === 'bank_deposit' && content.bank_info && (
+                <div style={{ marginTop: 14, padding: '12px 14px', background: '#f9fafb', borderRadius: 8, border: '1px solid #eee' }}>
+                  <RichTextDisplay html={content.bank_info} />
+                </div>
+              )}
             </div>
           </div>
 
@@ -149,6 +174,14 @@ export default function Checkout() {
                 You'll be redirected to WhatsApp to confirm your order
               </p>
             </div>
+
+            {/* Admin-editable: how the order process works */}
+            {content.process_info && (
+              <div className="checkout-card" style={{ marginTop: 16 }}>
+                <h3>ℹ️ How It Works</h3>
+                <RichTextDisplay html={content.process_info} />
+              </div>
+            )}
           </div>
         </div>
       </form>

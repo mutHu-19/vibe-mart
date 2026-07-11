@@ -5,6 +5,44 @@ import ProductModal from '../../components/ProductModal';
 const CAT_ICONS = { 'kitchen-items':'🍳','bags-purses':'👜','toys-games':'🧸','home-decor':'🏡','electronics':'📱' };
 const CAT_COLORS = { 'kitchen-items':'#0288d1','bags-purses':'#e62e04','toys-games':'#7c3aed','home-decor':'#16a34a','electronics':'#d97706' };
 
+function Slideshow({ slides }) {
+  const [index, setIndex] = useState(0);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (slides.length < 2) return;
+    timerRef.current = setInterval(() => setIndex(i => (i + 1) % slides.length), 4500);
+    return () => clearInterval(timerRef.current);
+  }, [slides.length]);
+
+  if (!slides || slides.length === 0) return null;
+
+  const go = (i) => setIndex((i + slides.length) % slides.length);
+
+  return (
+    <div className="slideshow">
+      <div className="slideshow-track" style={{ transform: `translateX(-${index * 100}%)` }}>
+        {slides.map(s => (
+          s.link_url
+            ? <a key={s.id} className="slideshow-slide" href={s.link_url}><img src={s.image_url} alt="" /></a>
+            : <div key={s.id} className="slideshow-slide"><img src={s.image_url} alt="" /></div>
+        ))}
+      </div>
+      {slides.length > 1 && (
+        <>
+          <button className="slideshow-arrow prev" onClick={() => go(index - 1)}>‹</button>
+          <button className="slideshow-arrow next" onClick={() => go(index + 1)}>›</button>
+          <div className="slideshow-dots">
+            {slides.map((s, i) => (
+              <button key={s.id} className={`slideshow-dot ${i === index ? 'active' : ''}`} onClick={() => go(i)} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ProductCard({ p, onClick }) {
   const disc = p.compare_price && p.compare_price > p.price ? Math.round((1-p.price/p.compare_price)*100) : null;
   return (
@@ -97,8 +135,11 @@ function CategoryPage({ category, onBack, onProductClick }) {
 }
 
 export default function ShopHome() {
-  const [featuredRows, setFeaturedRows] = useState([]);
   const [categories, setCategories]     = useState([]);
+  const [slides, setSlides]             = useState([]);
+  const [siteSettings, setSiteSettings] = useState({});
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [hotDeals, setHotDeals]         = useState([]);
   const [loading, setLoading]           = useState(true);
   const [selectedSlug, setSelectedSlug] = useState(null);
   const [activeCat, setActiveCat]       = useState(null);
@@ -108,15 +149,37 @@ export default function ShopHome() {
   const isPop = useRef(false);
 
   useEffect(() => {
-    Promise.all([api.get('/products/featured-by-category'), api.get('/categories')])
-      .then(([f, c]) => {
-        setFeaturedRows(Array.isArray(f.data) ? f.data : []);
+    Promise.all([
+      api.get('/categories'),
+      api.get('/banner-slides'),
+      api.get('/site-settings'),
+      api.get('/products', { params: { featured: 1, limit: 10 } }),
+      api.get('/products', { params: { hot_deal: 1, limit: 10 } }),
+    ])
+      .then(([c, sl, ss, feat, hot]) => {
         setCategories(Array.isArray(c.data) ? c.data : []);
+        setSlides(Array.isArray(sl.data) ? sl.data : []);
+        setSiteSettings(ss.data || {});
+        setFeaturedProducts(feat.data.products || []);
+        setHotDeals(hot.data.products || []);
         setLoading(false);
       }).catch(() => setLoading(false));
     if (!window.history.state?.shoplkBase)
       window.history.replaceState({ shoplkBase:true, view:'home' }, '');
   }, []);
+
+  // Let the mobile burger menu (which lives outside this route) open a category
+  useEffect(() => {
+    const handleOpenCategory = (e) => {
+      const slug = e.detail?.slug;
+      if (!slug) { setActiveCat(null); setSearchResults(null); return; }
+      const cat = categories.find(c => c.slug === slug);
+      if (cat) handleCatClick(cat);
+    };
+    window.addEventListener('shoplk-open-category', handleOpenCategory);
+    return () => window.removeEventListener('shoplk-open-category', handleOpenCategory);
+    
+  }, [categories]);
 
   useEffect(() => {
     const handle = (e) => {
@@ -206,17 +269,22 @@ export default function ShopHome() {
         <button type="submit" style={{ background:'#0288d1',border:'none',padding:'0 18px',color:'#fff',fontSize:16,cursor:'pointer',fontWeight:700 }}>🔍</button>
       </form>
 
-      <div className="hero-banner" style={{ marginBottom:12 }}>
-        <div className="hero-text">
-          <h1>Everything You Need,<br/>Delivered Fast 🚀</h1>
-          <p>Kitchen · Bags · Toys · Home Decor · Electronics</p>
-          <button className="hero-cta" onClick={()=>window.scrollTo({top:500,behavior:'smooth'})}>Shop Now →</button>
-        </div>
-        <div className="hero-badge">
-          <div className="badge-num">{categories.length}+</div>
-          <div className="badge-text">Categories</div>
-        </div>
-      </div>
+      {slides.length > 0
+        ? <Slideshow slides={slides} />
+        : (
+          <div className="hero-banner" style={{ marginBottom:12 }}>
+            <div className="hero-text">
+              <h1>Everything You Need,<br/>Delivered Fast 🚀</h1>
+              <p>Kitchen · Bags · Toys · Home Decor · Electronics</p>
+              <button className="hero-cta" onClick={()=>window.scrollTo({top:500,behavior:'smooth'})}>Shop Now →</button>
+            </div>
+            <div className="hero-badge">
+              <div className="badge-num">{categories.length}+</div>
+              <div className="badge-text">Categories</div>
+            </div>
+          </div>
+        )
+      }
 
       <div style={{ marginBottom:14 }}>
         <div className="section-hdr" style={{ marginBottom:8 }}>
@@ -233,38 +301,29 @@ export default function ShopHome() {
         </div>
       </div>
 
-      {featuredRows.map(({ category, products }) => {
-        const color = CAT_COLORS[category.slug] || '#0288d1';
-        return (
-          <div key={category.id} style={{ marginBottom:20 }}>
-            <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10 }}>
-              <div style={{ display:'flex',alignItems:'center',gap:8 }}>
-                <div style={{ width:4,height:18,background:color,borderRadius:2 }} />
-                <span style={{ fontFamily:'Rubik,sans-serif',fontWeight:800,fontSize:16,color:'#1b1b1b' }}>
-                  {CAT_ICONS[category.slug]||'📦'} {category.name}
-                </span>
-              </div>
-              <button onClick={()=>handleCatClick(category)}
-                style={{ background:'none',border:`1.5px solid ${color}`,color,padding:'4px 12px',borderRadius:20,fontSize:12,fontWeight:700,cursor:'pointer' }}>
-                See All →
-              </button>
-            </div>
-            {category.subcategories?.length > 0 && (
-              <div style={{ display:'flex',gap:6,overflowX:'auto',paddingBottom:6,marginBottom:8,scrollbarWidth:'none' }}>
-                {category.subcategories.slice(0,6).map(s=>(
-                  <button key={s.id} onClick={()=>handleCatClick(category)}
-                    style={{ padding:'4px 12px',borderRadius:20,border:'1px solid #e8e8e8',background:'#fff',color:'#555',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0 }}>
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="product-grid">
-              {products.map(p=><ProductCard key={p.id} p={p} onClick={openProduct}/>)}
-            </div>
+      {siteSettings.featured_active && featuredProducts.length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:10 }}>
+            <div style={{ width:4,height:18,background:'#0288d1',borderRadius:2 }} />
+            <span style={{ fontFamily:'Rubik,sans-serif',fontWeight:800,fontSize:16,color:'#1b1b1b' }}>⭐ Featured Products</span>
           </div>
-        );
-      })}
+          <div className="product-grid">
+            {featuredProducts.map(p=><ProductCard key={p.id} p={p} onClick={openProduct}/>)}
+          </div>
+        </div>
+      )}
+
+      {siteSettings.hotdeals_active && hotDeals.length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:10 }}>
+            <div style={{ width:4,height:18,background:'#e62e04',borderRadius:2 }} />
+            <span style={{ fontFamily:'Rubik,sans-serif',fontWeight:800,fontSize:16,color:'#1b1b1b' }}>🔥 Hot Deals</span>
+          </div>
+          <div className="product-grid">
+            {hotDeals.map(p=><ProductCard key={p.id} p={p} onClick={openProduct}/>)}
+          </div>
+        </div>
+      )}
 
       {selectedSlug && <ProductModal slug={selectedSlug} onClose={closeProduct} />}
     </>

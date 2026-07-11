@@ -8,7 +8,7 @@ const EMPTY_VARIANT = { size: '', colour: '', colour_hex: '#000000', stock_qty: 
 const EMPTY_PRODUCT = {
   category_id: '', subcategory_id: '', category_ids: [], subcategory_ids: [],
   name: '', description: '', price: '', compare_price: '',
-  sku: '', cost_price: '', images: [''], is_active: 1, is_featured: 1, sort_order: 0
+  sku: '', cost_price: '', images: [''], is_active: 1, is_featured: 1, is_hot_deal: 0, sort_order: 0
 };
 
 export default function Products() {
@@ -47,6 +47,7 @@ export default function Products() {
       images: data.images?.length ? data.images : [''],
       subcategory_id: data.subcategory_id || '',
       is_featured: data.is_featured ?? 1,
+      is_hot_deal: data.is_hot_deal ?? 0,
       sort_order: data.sort_order || 0,
       category_ids: (data.category_ids || []).map(String),
       subcategory_ids: (data.subcategory_ids || []).map(String),
@@ -369,6 +370,21 @@ export default function Products() {
                         <button key={opt.val} type="button"
                           onClick={() => setForm(f => ({ ...f, is_featured: opt.val }))}
                           style={{ flex: 1, padding: '8px', borderRadius: 4, border: `1.5px solid ${form.is_featured === opt.val ? '#0288d1' : '#e8e8e8'}`, background: form.is_featured === opt.val ? '#e0f0ff' : '#fff', color: form.is_featured === opt.val ? '#0277bd' : '#888', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 10 }}>
+                  <div className="admin-form-group">
+                    <label className="admin-label">🔥 Hot Deal? <span style={{ color: '#888', fontWeight: 400 }}>(shows in the Hot Deals section on the homepage)</span></label>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      {[{ val: 1, label: '🔥 Hot Deal' }, { val: 0, label: 'Not a deal' }].map(opt => (
+                        <button key={opt.val} type="button"
+                          onClick={() => setForm(f => ({ ...f, is_hot_deal: opt.val }))}
+                          style={{ flex: 1, padding: '8px', borderRadius: 4, border: `1.5px solid ${form.is_hot_deal === opt.val ? '#e62e04' : '#e8e8e8'}`, background: form.is_hot_deal === opt.val ? '#ffece6' : '#fff', color: form.is_hot_deal === opt.val ? '#c62200' : '#888', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
                           {opt.label}
                         </button>
                       ))}

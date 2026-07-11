@@ -35,6 +35,8 @@ const NAV_SECTIONS = [
       { key: 'admin-users',   icon: '👤', label: 'Admin Users',    roles: ['super_admin'] },
       { key: 'bill-settings', icon: '⚙️', label: 'Bill Settings',  roles: ['all'] },
        { key: 'popup-settings', icon: '🔔', label: 'Website Popup', roles: ['all'] },
+       { key: 'checkout-settings', icon: '🛒', label: 'Checkout Content', roles: ['all'] },
+       { key: 'site-settings', icon: '🎨', label: 'Website Design', roles: ['all'] },
       { key: 'change-password', icon: '🔑', label: 'Change Password', roles: ['all'] },
       
     ]
